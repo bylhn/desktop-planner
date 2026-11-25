@@ -88,7 +88,11 @@ function saveNow() {
     fs.writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf8');
     fs.renameSync(tmp, dataFile);
   } catch (e) { console.error('save failed', e); }
+  // first real content of the day gets its backup right away (not only on the hourly tick)
+  const day = new Date().toDateString();
+  if (lastBackupDay !== day && hasContent(data)) { lastBackupDay = day; backupToday(); }
 }
+let lastBackupDay = null;
 app.whenReady().then(() => { backupToday(); setInterval(backupToday, 60 * 60 * 1000); }); // refreshes today's copy hourly
 
 let win = null;
@@ -264,6 +268,17 @@ function setAutoStart(on) {
     else execFileSync('reg', ['delete', RUN_KEY, '/v', RUN_NAME, '/f'], { stdio: 'ignore', windowsHide: true });
   } catch (e) { console.error('auto-start change failed', e); }
 }
+// If the app was reinstalled somewhere else (e.g. a different install folder), an existing autostart
+// entry would still launch the old copy. Point it at this exe on start.
+function repairAutoStart() {
+  if (!app.isPackaged || process.env.PLANNER_DATA) return;
+  try {
+    const out = execFileSync('reg', ['query', RUN_KEY, '/v', RUN_NAME], { encoding: 'utf8', windowsHide: true });
+    const cur = (out.match(/REG_SZ\s+(.+)\s*$/m) || [])[1];
+    if (cur && cur.trim().toLowerCase() !== runCommand().toLowerCase()) { setAutoStart(true); logLine(`autostart path fixed: ${cur.trim()} -> ${runCommand()}`); }
+  } catch { /* autostart is off */ }
+}
+app.whenReady().then(repairAutoStart);
 
 // ---------- i18n (tray menu + calendar errors; the window has its own strings) ----------
 const TR = {
