@@ -174,6 +174,7 @@ const TR = {
   ko: {
     tip: '데스크톱 플래너', hide: '플래너 숨기기', show: '플래너 보이기', unlock: '잠금 해제 (이동/크기 조절)', lock: '위치 잠그기',
     reset: '위치 초기화', autostart: '윈도우 시작 시 자동 실행', quit: '종료',
+    updInstall: (v) => `🎉 업데이트 설치하고 다시 시작 (v${v})`, updCheck: '업데이트 확인', updDownloading: (v, p) => `업데이트 받는 중… v${v} (${p}%)`,
     errUrl: 'http(s)로 시작하는 주소가 아니에요', errHttp: (s) => `서버 응답 오류 (${s})`, errBig: '파일이 너무 커요',
     errFormat: 'iCal 형식이 아니에요. "iCal/ICS 주소"를 넣어 주세요', errTimeout: '응답이 없어요 (시간 초과)',
     gPageOk: '✅ Google 캘린더가 연결됐어요', gPageFail: '연결하지 못했어요', gPageClose: '이 창을 닫고 플래너로 돌아가세요.',
@@ -181,6 +182,7 @@ const TR = {
   en: {
     tip: 'Desktop Planner', hide: 'Hide planner', show: 'Show planner', unlock: 'Unlock (move / resize)', lock: 'Lock position',
     reset: 'Reset position', autostart: 'Start with Windows', quit: 'Quit',
+    updInstall: (v) => `🎉 Install update and restart (v${v})`, updCheck: 'Check for updates', updDownloading: (v, p) => `Downloading update… v${v} (${p}%)`,
     errUrl: 'The link must start with http(s)', errHttp: (s) => `Server error (${s})`, errBig: 'The file is too large',
     errFormat: 'Not an iCal feed. Paste the calendar\'s iCal/ICS link', errTimeout: 'No response (timed out)',
     gPageOk: '✅ Google Calendar is connected', gPageFail: 'Could not connect', gPageClose: 'You can close this tab and go back to the planner.',
@@ -196,14 +198,23 @@ const tr = (k, ...a) => { const v = TR[lang()][k]; return typeof v === 'function
 function buildTrayMenu() {
   const login = isAutoStart();
   tray.setToolTip(tr('tip'));
+  const upd = typeof updateState !== 'undefined' ? updateState : { status: 'idle' };
+  const updItems = upd.status === 'ready'
+    ? [{ label: tr('updInstall', upd.version), click: () => installUpdate() }, { type: 'separator' }]
+    : upd.status === 'downloading'
+      ? [{ label: tr('updDownloading', upd.version, upd.progress || 0), enabled: false }, { type: 'separator' }]
+      : [];
   tray.setContextMenu(trayMenu = Menu.buildFromTemplate([
+    ...updItems,
     { label: win.isVisible() ? tr('hide') : tr('show'), click: () => { win.isVisible() ? win.hide() : (win.showInactive(), pinBottom()); buildTrayMenu(); } },
     { label: data.settings.locked ? tr('unlock') : tr('lock'), click: () => setLocked(!data.settings.locked) },
     { label: tr('reset'), click: () => { win.setBounds(defaultBounds()); data.settings.bounds = win.getBounds(); saveSoon(); } },
     { type: 'separator' },
     { label: tr('autostart'), type: 'checkbox', checked: login, click: (item) => { setAutoStart(item.checked); buildTrayMenu(); } },
+    ...(app.isPackaged ? [{ label: tr('updCheck'), click: () => checkForUpdates() }] : []),
     { type: 'separator' },
-    { label: tr('quit'), click: () => { saveNow(); app.exit(0); } },
+    // app.quit (not app.exit) so a downloaded update gets installed on the way out
+    { label: tr('quit'), click: () => { saveNow(); app.quit(); } },
   ]));
 }
 
@@ -405,6 +416,49 @@ ipcMain.handle('google-toggle', async (_e, id, on) => {
   saveSoon();
   return refreshCalendars();
 });
+
+// ---------- Auto-update (GitHub Releases via electron-updater) ----------
+// Checks shortly after start and every 6 hours, downloads in the background, then asks the user to
+// restart. If they don't, the update is applied automatically the next time the app quits.
+let updateState = { status: 'idle', version: null, progress: 0, error: null };
+let autoUpdater = null;
+function sendUpdate(patch) {
+  updateState = { ...updateState, ...patch };
+  if (win) win.webContents.send('update-state', updateState);
+  if (tray && win) buildTrayMenu();
+}
+function checkForUpdates() {
+  if (!autoUpdater || updateState.status === 'downloading' || updateState.status === 'ready') return;
+  autoUpdater.checkForUpdates().catch((e) => sendUpdate({ status: 'error', error: e.message }));
+}
+function initUpdater() {
+  const testFeed = process.env.PLANNER_UPDATE_URL; // local test server (generic provider)
+  if (!app.isPackaged && !testFeed) return;
+  try { ({ autoUpdater } = require('electron-updater')); } catch (e) { console.error('updater unavailable', e); return; }
+  if (testFeed) { autoUpdater.forceDevUpdateConfig = !app.isPackaged; autoUpdater.setFeedURL({ provider: 'generic', url: testFeed }); }
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.on('checking-for-update', () => sendUpdate({ status: 'checking', error: null }));
+  autoUpdater.on('update-available', (i) => sendUpdate({ status: 'downloading', version: i.version, progress: 0 }));
+  autoUpdater.on('update-not-available', () => sendUpdate({ status: 'latest' }));
+  let lastPct = -10;
+  autoUpdater.on('download-progress', (p) => { if (p.percent - lastPct >= 5) { lastPct = p.percent; sendUpdate({ progress: Math.round(p.percent) }); } });
+  autoUpdater.on('update-downloaded', (i) => sendUpdate({ status: 'ready', version: i.version, progress: 100 }));
+  autoUpdater.on('error', (e) => sendUpdate({ status: 'error', error: (e && e.message || String(e)).split('\n')[0] }));
+  setTimeout(checkForUpdates, testFeed ? 3000 : 20000);
+  setInterval(checkForUpdates, 6 * 60 * 60 * 1000);
+}
+function installUpdate() {
+  if (!autoUpdater || updateState.status !== 'ready') return;
+  saveNow();
+  setImmediate(() => autoUpdater.quitAndInstall(true, true)); // silent install, then relaunch
+}
+app.whenReady().then(initUpdater);
+ipcMain.handle('update-get', () => ({ ...updateState, current: app.getVersion(), packaged: app.isPackaged || !!process.env.PLANNER_UPDATE_URL }));
+// test hook: install as soon as the update is downloaded
+if (process.env.PLANNER_UPDATE_AUTOINSTALL) setInterval(() => { if (updateState.status === 'ready') installUpdate(); }, 2000);
+ipcMain.on('update-check', () => checkForUpdates());
+ipcMain.on('update-install', () => installUpdate());
 
 ipcMain.handle('load', () => data);
 ipcMain.handle('app-info', () => ({ version: app.getVersion() }));

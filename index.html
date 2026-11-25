@@ -212,6 +212,15 @@
   .pop .row button.on { background: var(--accent); color: #fff; }
   .pop .wide { width: 100%; margin-top: 4px; }
 
+  /* ---------- update toast ---------- */
+  .toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 50; display: flex; align-items: center; gap: 12px; max-width: calc(100% - 40px); background: rgba(var(--base), .97); border-radius: 14px; padding: 12px 14px 12px 16px; box-shadow: 0 12px 40px rgba(0,0,0,.22); border: 1px solid var(--line); animation: pop .25s ease-out; -webkit-app-region: no-drag; }
+  .toast .ti { font-size: 22px; }
+  .toast .tt b { display: block; font-size: 13.5px; }
+  .toast .tt span { font-size: 12px; color: var(--ink-soft); }
+  .toast .tb { padding: 7px 12px; border-radius: 9px; background: var(--chip); font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+  .toast .tb.primary { background: var(--accent); color: #fff; }
+  .upd { font-size: 11.5px; color: var(--ink-soft); margin-top: 3px; }
+
   /* ---------- about + help ---------- */
   .about { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); text-align: center; }
   .about .ver { font-size: 11.5px; color: var(--ink-soft); margin-top: 10px; }
@@ -300,8 +309,16 @@
   <div class="about">
     <button class="wide" id="helpBtn" data-i18n="howTo"></button>
     <div class="ver"><b>Desktop Planner</b> <span id="verTxt"></span> · made by <b>bylhn</b></div>
+    <div class="upd"><span id="updTxt"></span> <a href="#" id="updBtn"></a></div>
     <div class="links"><a href="#" data-link="repo">GitHub</a> · <a href="#" data-link="guide" data-i18n="guide"></a> · <a href="#" data-link="privacy" data-i18n="privacy"></a> · <a href="#" data-link="issues" data-i18n="feedback"></a></div>
   </div>
+</div>
+
+<div class="toast" id="updToast" hidden>
+  <span class="ti">🎉</span>
+  <div class="tt"><b id="toastTitle"></b><span id="toastSub"></span></div>
+  <button class="tb primary" id="toastNow"></button>
+  <button class="tb" id="toastLater"></button>
 </div>
 
 <div class="modal" id="help" hidden>
@@ -400,6 +417,8 @@ const STR = {
     blur: '배경 흐림', on: '켜기', off: '끄기', language: '언어 / Language',
     pastTodos: '지난 할 일', rollover: '못 끝낸 지난 할 일 → 오늘로 옮기기',
     rolled: (n) => `${n}개를 오늘로 옮겼어요`, nothingToRoll: '옮길 할 일이 없어요',
+    updChecking: '업데이트 확인 중…', updLatest: '최신 버전이에요', updDownloading: (v, p) => `새 버전 v${v} 받는 중… ${p}%`, updReady: (v) => `새 버전 v${v} 준비 완료`, updError: '업데이트를 확인하지 못했어요', updCheckBtn: '업데이트 확인', updInstallBtn: '지금 다시 시작',
+    toastTitle: (v) => `새 버전 v${v}가 준비됐어요`, toastSub: '다시 시작하면 바로 적용돼요. 나중에 꺼도 자동으로 적용돼요.', toastNow: '지금 다시 시작', toastLater: '나중에',
     howTo: '📖 사용법 보기', guide: '설명서', privacy: '개인정보처리방침', feedback: '의견 보내기',
     helpTitle: 'Desktop Planner 사용법', helpSub: '바탕화면에 붙어 있는 나만의 스터디 플래너예요. 이것만 알면 바로 쓸 수 있어요.',
     guideFull: '자세한 설명서 보기 →', start: '시작하기',
@@ -446,6 +465,8 @@ const STR = {
     blur: 'Background blur', on: 'On', off: 'Off', language: 'Language / 언어',
     pastTodos: 'Past to-dos', rollover: 'Move unfinished past to-dos to today',
     rolled: (n) => `Moved ${n} to today`, nothingToRoll: 'Nothing to move',
+    updChecking: 'Checking for updates…', updLatest: "You're up to date", updDownloading: (v, p) => `Downloading v${v}… ${p}%`, updReady: (v) => `v${v} is ready`, updError: "Couldn't check for updates", updCheckBtn: 'Check for updates', updInstallBtn: 'Restart now',
+    toastTitle: (v) => `Version ${v} is ready`, toastSub: "Restart to apply it now — or it'll be applied next time the planner closes.", toastNow: 'Restart now', toastLater: 'Later',
     howTo: '📖 How to use', guide: 'Guide', privacy: 'Privacy', feedback: 'Feedback',
     helpTitle: 'Getting started', helpSub: 'Your study planner, pinned to the desktop. Here is all you need to know.',
     guideFull: 'Read the full guide →', start: 'Get started',
@@ -505,6 +526,26 @@ function applyLang() {
   $('langEn').classList.toggle('on', LANG === 'en');
   $('tips').innerHTML = t('tips').map(([ic, title, body]) => `<li><span class="ic">${ic}</span><div><b>${title}</b><span>${body}</span></div></li>`).join('');
 }
+/* ---------- updates ---------- */
+let upd = { status: 'idle' }, toastDismissedFor = null;
+function renderUpdate() {
+  const s = upd.status;
+  $('updTxt').textContent = s === 'checking' ? t('updChecking') : s === 'latest' ? t('updLatest') : s === 'downloading' ? t('updDownloading', upd.version, upd.progress || 0)
+    : s === 'ready' ? t('updReady', upd.version) : s === 'error' ? t('updError') : '';
+  $('updBtn').textContent = s === 'ready' ? t('updInstallBtn') : (s === 'idle' || s === 'latest' || s === 'error') && upd.packaged !== false ? t('updCheckBtn') : '';
+  $('updBtn').title = s === 'error' ? (upd.error || '') : '';
+  const showToast = s === 'ready' && toastDismissedFor !== upd.version;
+  $('updToast').hidden = !showToast;
+  if (showToast) { $('toastTitle').textContent = t('toastTitle', upd.version); $('toastSub').textContent = t('toastSub'); $('toastNow').textContent = t('toastNow'); $('toastLater').textContent = t('toastLater'); }
+}
+function initUpdateUI() { // called once the page's helpers ($ etc.) exist
+  $('updBtn').onclick = (e) => { e.preventDefault(); e.stopPropagation(); if (upd.status === 'ready') window.planner.updateInstall(); else window.planner.updateCheck(); };
+  $('toastNow').onclick = () => window.planner.updateInstall();
+  $('toastLater').onclick = () => { toastDismissedFor = upd.version; renderUpdate(); };
+  window.planner.onUpdate((s) => { upd = { ...upd, ...s }; renderUpdate(); });
+  window.planner.updateGet().then((s) => { upd = { ...upd, ...s }; renderUpdate(); });
+}
+
 function showHelp() { $('pop').classList.remove('open'); $('help').hidden = false; }
 function closeHelp() {
   $('help').hidden = true;
@@ -1076,7 +1117,8 @@ window.planner.load().then(async (d) => {
   setCalendar(await window.planner.calendarGet());
   render();
   window.planner.appInfo().then((i) => { $('verTxt').textContent = 'v' + i.version; });
-  const open = new URLSearchParams(location.search).get('open');
+  initUpdateUI();
+  const open =new URLSearchParams(location.search).get('open');
   if (open === 'dash') openDash();
   if (open === 'settings') $('pop').classList.add('open');
   if (open === 'month') setView('month');
