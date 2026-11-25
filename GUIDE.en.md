@@ -115,7 +115,11 @@ Connected events are **read-only** — they're never changed by the planner and 
 
 ## 9. Tray menu and start with Windows
 
-**Right-click** the planner icon at the bottom-right of the taskbar (next to the clock) for:
+The tray icon is the purple checklist icon at the **far right of the taskbar, left of the clock**.
+
+> 💡 **Can't see it?** Click the **^ (Show hidden icons)** arrow next to the clock — it may be tucked in there. Drag it onto the taskbar to keep it visible.
+
+**Right-click** the planner icon for:
 - Hide / show planner
 - Unlock / lock position
 - **Reset position** (if it went off-screen)
@@ -126,6 +130,9 @@ Connected events are **read-only** — they're never changed by the planner and 
 
 **I can't see the planner.**
 Click the tray icon, or right-click → "Show planner". If it's off-screen, use "Reset position".
+
+**I can't find the tray icon.**
+Click the **^** arrow next to the clock to show hidden icons. The purple checklist icon is the planner.
 
 **It won't come in front of other windows.**
 By design — it's a desktop widget that always stays behind other windows. Press `Win + D` to see it.
