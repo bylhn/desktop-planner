@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld('planner', {
   calendarGet: () => ipcRenderer.invoke('calendar-get'),
   calendarRefresh: () => ipcRenderer.invoke('calendar-refresh'),
   onCalendar: (cb) => ipcRenderer.on('calendar-updated', (_e, p) => cb(p)),
+  appInfo: () => ipcRenderer.invoke('app-info'),
+  openLink: (key) => ipcRenderer.send('open-link', key),
   googleLogin: () => ipcRenderer.invoke('google-login'),
   googleLogout: () => ipcRenderer.invoke('google-logout'),
   googleToggle: (id, on) => ipcRenderer.invoke('google-toggle', id, on),

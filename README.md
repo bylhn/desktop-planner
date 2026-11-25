@@ -10,7 +10,7 @@
     <img src="https://img.shields.io/github/v/release/bylhn/desktop-planner?style=for-the-badge&logo=windows&logoColor=white&label=Windows%20%EB%8B%A4%EC%9A%B4%EB%A1%9C%EB%93%9C&color=6b5cff" alt="Windows 다운로드" height="44">
   </a>
 </p>
-<p align="center"><sub>Windows 10/11 (64비트) · 무료 · 로그인 불필요</sub></p>
+<p align="center"><sub>Windows 10/11 (64비트) · 무료 · 로그인 불필요 · 📖 <a href="GUIDE.md">사용 설명서</a></sub></p>
 
 ![하루 화면](docs/screenshot-day.png)
 

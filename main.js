@@ -370,6 +370,16 @@ ipcMain.handle('google-toggle', async (_e, id, on) => {
 });
 
 ipcMain.handle('load', () => data);
+ipcMain.handle('app-info', () => ({ version: app.getVersion() }));
+// Only these fixed links can be opened from the window.
+const LINKS = {
+  repo: 'https://github.com/bylhn/desktop-planner',
+  privacy: 'https://github.com/bylhn/desktop-planner/blob/main/PRIVACY.md',
+  guideKo: 'https://github.com/bylhn/desktop-planner/blob/main/GUIDE.md',
+  guideEn: 'https://github.com/bylhn/desktop-planner/blob/main/GUIDE.en.md',
+  issues: 'https://github.com/bylhn/desktop-planner/issues',
+};
+ipcMain.on('open-link', (_e, key) => { if (LINKS[key]) require('electron').shell.openExternal(LINKS[key]); });
 ipcMain.on('save-todos', (_e, todos) => { data.todos = todos; saveSoon(); });
 ipcMain.on('save-settings', (_e, s) => {
   delete s.bounds; // the main process owns window bounds

@@ -212,6 +212,26 @@
   .pop .row button.on { background: var(--accent); color: #fff; }
   .pop .wide { width: 100%; margin-top: 4px; }
 
+  /* ---------- about + help ---------- */
+  .about { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); text-align: center; }
+  .about .ver { font-size: 11.5px; color: var(--ink-soft); margin-top: 10px; }
+  .about .links { font-size: 11.5px; margin-top: 4px; color: var(--ink-soft); }
+  .about a, .mfoot a { color: var(--accent); text-decoration: none; }
+  .about a:hover, .mfoot a:hover { text-decoration: underline; }
+  .modal { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; background: rgba(0, 0, 0, .18); border-radius: 16px; -webkit-app-region: no-drag; }
+  .mcard { width: min(560px, calc(100% - 40px)); max-height: calc(100% - 40px); overflow-y: auto; background: rgba(var(--base), .97); border-radius: 16px; padding: 22px 24px 18px; box-shadow: 0 16px 50px rgba(0, 0, 0, .22); animation: pop .2s ease-out; }
+  .mhead2 { display: flex; align-items: center; justify-content: space-between; }
+  .mhead2 h2 { margin: 0; font-size: 19px; }
+  .msub { color: var(--ink-soft); margin: 4px 0 14px; font-size: 12.5px; }
+  .tips { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .tips li { display: flex; gap: 12px; align-items: flex-start; background: var(--chip); border-radius: 12px; padding: 11px 13px; }
+  .tips .ic { font-size: 20px; line-height: 1; flex: none; margin-top: 1px; }
+  .tips b { display: block; font-size: 13.5px; margin-bottom: 2px; }
+  .tips span { font-size: 12.5px; color: var(--ink-soft); line-height: 1.5; }
+  .tips code { background: rgba(var(--accent-rgb), .12); color: var(--accent); padding: 0 5px; border-radius: 5px; font-family: inherit; }
+  .mfoot { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; font-size: 12.5px; }
+  .mbtn { padding: 9px 20px; border-radius: 10px; background: var(--accent); color: #fff; font-weight: 700; }
+
   /* ---------- dashboard (hidden, opened by keyword) ---------- */
   .dash { position: absolute; inset: 0 calc(var(--side-w) + 26px) 14px 16px; z-index: 15; background: rgba(var(--base), 0.97); border-radius: 14px; padding: 18px 22px; overflow-y: auto; display: none; }
   .dash.open { display: block; animation: pop .2s ease-out; }
@@ -277,6 +297,20 @@
   <div class="row" style="margin-top:6px"><button id="calAdd" data-i18n="add"></button><button id="calRefresh" data-i18n="refreshNow"></button></div>
   <div class="hint" id="calMsg"></div>
   <div class="hint" data-i18n-html="calHelp"></div>
+  <div class="about">
+    <button class="wide" id="helpBtn" data-i18n="howTo"></button>
+    <div class="ver"><b>Desktop Planner</b> <span id="verTxt"></span> · made by <b>bylhn</b></div>
+    <div class="links"><a href="#" data-link="repo">GitHub</a> · <a href="#" data-link="guide" data-i18n="guide"></a> · <a href="#" data-link="privacy" data-i18n="privacy"></a> · <a href="#" data-link="issues" data-i18n="feedback"></a></div>
+  </div>
+</div>
+
+<div class="modal" id="help" hidden>
+  <div class="mcard">
+    <div class="mhead2"><h2 data-i18n="helpTitle"></h2><button class="icon-btn" id="helpX" data-i18n-title="closeEsc"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <p class="msub" data-i18n="helpSub"></p>
+    <ol class="tips" id="tips"></ol>
+    <div class="mfoot"><a href="#" data-link="guide" data-i18n="guideFull"></a><button class="mbtn" id="helpOk" data-i18n="start"></button></div>
+  </div>
 </div>
 
 <main>
@@ -366,6 +400,17 @@ const STR = {
     blur: '배경 흐림', on: '켜기', off: '끄기', language: '언어 / Language',
     pastTodos: '지난 할 일', rollover: '못 끝낸 지난 할 일 → 오늘로 옮기기',
     rolled: (n) => `${n}개를 오늘로 옮겼어요`, nothingToRoll: '옮길 할 일이 없어요',
+    howTo: '📖 사용법 보기', guide: '설명서', privacy: '개인정보처리방침', feedback: '의견 보내기',
+    helpTitle: 'Desktop Planner 사용법', helpSub: '바탕화면에 붙어 있는 나만의 스터디 플래너예요. 이것만 알면 바로 쓸 수 있어요.',
+    guideFull: '자세한 설명서 보기 →', start: '시작하기',
+    tips: [
+      ['📌', '바탕화면에 붙어 있어요', '항상 다른 창 뒤에 머물고 <code>Win + D</code>에도 그대로예요. 🔒 잠금을 풀면 위쪽을 끌어 옮기고 모서리로 크기를 바꿀 수 있어요.'],
+      ['🔁', '고정 루틴', '"고정 루틴" 옆 <b style="display:inline">편집</b>을 눌러 매일(또는 정한 요일마다) 반복할 일을 추가하세요. 날마다 새로 체크해요.'],
+      ['✅', '오늘의 할 일', '그날만 할 일을 쓰고 Enter. <code>14:00 회의 준비</code>처럼 시간을 앞에 쓰면 시간순으로 정렬돼요. 더블클릭하면 수정돼요.'],
+      ['📅', '캘린더 연동', '⚙ 설정에서 <b style="display:inline">Google로 로그인</b>하거나 iCal 주소를 넣으면 일정이 함께 보여요.'],
+      ['📊', '대시보드', '오른쪽 아래 토글을 켜면 연속 완수 일수, 30일 달성률 그래프, 루틴별 달성률을 볼 수 있어요.'],
+      ['⚙️', '트레이 메뉴', '작업표시줄 오른쪽 아이콘을 우클릭하면 숨기기, 위치 초기화, 윈도우 시작 시 자동 실행, 종료가 있어요.'],
+    ],
     gTitle: 'Google 캘린더', gLogin: 'Google로 로그인', gLoginHint: '브라우저에서 로그인하고 허용을 누르면 연결돼요. 일정은 보기 전용이고 15분마다 새로 받아와요.',
     gWaiting: '브라우저에서 로그인을 마쳐 주세요…', gSync: '동기화', gLogout: '연결 해제', gShowCals: '표시할 캘린더', gSynced: '동기화했어요.',
     gNoClient: '이 버전에는 Google 로그인 설정(google-client.json)이 없어요.', gExpired: '로그인이 만료됐어요. 다시 로그인해 주세요.', gTimeout: '로그인 시간이 지났어요. 다시 시도해 주세요.',
@@ -401,6 +446,17 @@ const STR = {
     blur: 'Background blur', on: 'On', off: 'Off', language: 'Language / 언어',
     pastTodos: 'Past to-dos', rollover: 'Move unfinished past to-dos to today',
     rolled: (n) => `Moved ${n} to today`, nothingToRoll: 'Nothing to move',
+    howTo: '📖 How to use', guide: 'Guide', privacy: 'Privacy', feedback: 'Feedback',
+    helpTitle: 'Getting started', helpSub: 'Your study planner, pinned to the desktop. Here is all you need to know.',
+    guideFull: 'Read the full guide →', start: 'Get started',
+    tips: [
+      ['📌', 'Lives on your desktop', 'It always stays behind other windows and survives <code>Win + D</code>. Unlock 🔒 to drag the top bar to move it, or drag an edge to resize.'],
+      ['🔁', 'Fixed routines', 'Click <b style="display:inline">Edit</b> next to "Fixed routines" to add things you repeat every day (or on chosen weekdays). They reset each day.'],
+      ['✅', "Today's to-dos", 'Type a one-off task and press Enter. Start with a time like <code>14:00 Prep</code> or <code>2pm Prep</code> to sort by time. Double-click to edit.'],
+      ['📅', 'Calendars', 'In ⚙ Settings, <b style="display:inline">Sign in with Google</b> or add an iCal link to see your events here.'],
+      ['📊', 'Dashboard', 'Flip the toggle at the bottom-right for streaks, a 30-day completion chart and per-routine rates.'],
+      ['⚙️', 'Tray menu', 'Right-click the tray icon (bottom-right of the taskbar) to hide, reset position, start with Windows, or quit.'],
+    ],
     gTitle: 'Google Calendar', gLogin: 'Sign in with Google', gLoginHint: 'Sign in and allow access in your browser. Events are read-only and refresh every 15 minutes.',
     gWaiting: 'Finish signing in in your browser…', gSync: 'Sync', gLogout: 'Disconnect', gShowCals: 'Calendars to show', gSynced: 'Synced.',
     gNoClient: 'This build has no Google sign-in setup (google-client.json).', gExpired: 'Your sign-in expired. Please sign in again.', gTimeout: 'Sign-in timed out. Please try again.',
@@ -447,6 +503,12 @@ function applyLang() {
   $('dowRow').innerHTML = DOW.map((n, i) => `<div class="${i === 0 ? 'sun' : i === 6 ? 'sat' : ''}">${n}</div>`).join('');
   $('langKo').classList.toggle('on', LANG === 'ko');
   $('langEn').classList.toggle('on', LANG === 'en');
+  $('tips').innerHTML = t('tips').map(([ic, title, body]) => `<li><span class="ic">${ic}</span><div><b>${title}</b><span>${body}</span></div></li>`).join('');
+}
+function showHelp() { $('pop').classList.remove('open'); $('help').hidden = false; }
+function closeHelp() {
+  $('help').hidden = true;
+  if (!settings.onboarded) { settings.onboarded = true; persist(); }
 }
 const CHECK = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 const LOCK = '<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
@@ -918,7 +980,18 @@ $('vDay').onclick = () => setView('day');
 $('vMonth').onclick = () => setView('month');
 $('dashClose').onclick = closeDash;
 $('dashToggle').onclick = () => setDash(!$('dash').classList.contains('open'));
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeDash(); $('pop').classList.remove('open'); } });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (!$('help').hidden) closeHelp(); closeDash(); $('pop').classList.remove('open'); } });
+$('helpBtn').onclick = (e) => { e.stopPropagation(); showHelp(); };
+$('helpX').onclick = closeHelp;
+$('helpOk').onclick = closeHelp;
+$('help').addEventListener('click', (e) => { if (e.target === $('help')) closeHelp(); });
+document.addEventListener('click', (e) => {
+  const a = e.target.closest && e.target.closest('[data-link]');
+  if (!a) return;
+  e.preventDefault();
+  const key = a.dataset.link === 'guide' ? (LANG === 'ko' ? 'guideKo' : 'guideEn') : a.dataset.link;
+  window.planner.openLink(key);
+});
 
 $('lockBtn').onclick = () => { settings.locked = !settings.locked; persist(); applySettings(); };
 $('setBtn').onclick = (e) => { e.stopPropagation(); $('pop').classList.toggle('open'); };
@@ -1002,9 +1075,14 @@ window.planner.load().then(async (d) => {
   persist();
   setCalendar(await window.planner.calendarGet());
   render();
+  window.planner.appInfo().then((i) => { $('verTxt').textContent = 'v' + i.version; });
   const open = new URLSearchParams(location.search).get('open');
   if (open === 'dash') openDash();
   if (open === 'settings') $('pop').classList.add('open');
+  if (open === 'month') setView('month');
+  if (open === 'edit') { editingRoutines = true; renderDay(); }
+  // First launch (or opened for screenshots): show the quick guide once.
+  if (open === 'help' || (!open && !settings.onboarded)) showHelp();
 });
 window.planner.onCalendar((p) => { setCalendar(p); render(); });
 </script>
