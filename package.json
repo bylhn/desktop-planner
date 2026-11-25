@@ -1,0 +1,56 @@
+{
+  "name": "desktop-planner",
+  "productName": "Desktop Planner",
+  "version": "1.0.0",
+  "description": "바탕화면에 고정되는 투명 스터디 플래너 위젯 (고정 루틴 · 오늘의 할 일 · 달성 기록 대시보드)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "icon": "py -I build/make-icon.py",
+    "dist": "electron-builder --win nsis"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "koffi": "^2.9.0"
+  },
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.desktopplanner.app",
+    "productName": "Desktop Planner",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "ics.js",
+      "index.html",
+      "assets/**",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/koffi/**"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Desktop Planner",
+      "installerLanguages": [
+        "ko_KR"
+      ],
+      "language": "1042",
+      "artifactName": "DesktopPlanner-Setup-${version}.exe"
+    }
+  }
+}

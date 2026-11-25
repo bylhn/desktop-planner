@@ -1,0 +1,5 @@
+node_modules/
+dist/
+*.log
+planner-data.json
+test-data.json
