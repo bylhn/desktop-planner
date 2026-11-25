@@ -1,5 +1,7 @@
 # Desktop Planner
 
+<p align="center"><b>한국어</b> · <a href="README.en.md">English</a></p>
+
 바탕화면에 붙어 있는 **투명 스터디 플래너 위젯**입니다.
 매일 반복하는 고정 루틴과 그날그날의 할 일을 체크하고, 달성 기록을 그래프로 돌아볼 수 있어요.
 
