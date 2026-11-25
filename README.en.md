@@ -24,7 +24,8 @@ Check off fixed daily routines and each day's to-dos, and look back on your prog
 - **Today's to-dos** — one-off tasks for a given day. Start with a time, like `14:00 Prepare meeting`, and they are sorted by time.
 - **Completion history** — every check is recorded per day, and the mini calendar is shaded by how much you got done.
 - **Dashboard** — current and longest streak, 30-day completion chart, 20-week heatmap, and per-routine completion rates. Toggle it from the bottom-right corner.
-- **Sign in with Google** — one click shows your Google Calendar events (holidays included) right in the planner; pick which calendars to show (read-only, refreshed every 15 minutes while you're using the PC).
+- **Sign in with Google** — one click shows your Google Calendar events (holidays included) right in the planner; pick which calendars to show (refreshed every 15 minutes while you're using the PC).
+- **Add events from the Month view** — click a date, type `14:00 Meeting`, and it goes straight to Google Calendar and your phone. Events you add on your phone show up in the planner too.
 - **iCal subscriptions** — also connect iCloud, Outlook or any calendar that offers an iCal (ICS) link.
 - **Month view**, move unfinished past to-dos to today, start with Windows.
 

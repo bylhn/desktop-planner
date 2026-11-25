@@ -58,8 +58,9 @@ function hwndOf(w) {
   const buf = w.getNativeWindowHandle();
   return buf.length === 8 ? Number(buf.readBigUInt64LE(0)) : buf.readUInt32LE(0);
 }
+let peeking = false; // true while the planner is brought in front (desktop icon / tray click)
 function pinBottom() {
-  if (!win || !SetWindowPos || pinning) return;
+  if (!win || !SetWindowPos || pinning || peeking) return;
   pinning = true;
   try { SetWindowPos(hwndOf(win), HWND_BOTTOM, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE); }
   finally { pinning = false; }
@@ -114,6 +115,10 @@ function createWindow() {
   });
   // PLANNER_OPEN=dash|settings opens a panel on start (used for screenshots/testing)
   win.loadFile('index.html', process.env.PLANNER_OPEN ? { query: { open: process.env.PLANNER_OPEN } } : undefined);
+  // PLANNER_SHOT=<file.png> saves a screenshot of the window a few seconds after start (testing)
+  if (process.env.PLANNER_SHOT) win.webContents.once('did-finish-load', () => setTimeout(async () => {
+    fs.writeFileSync(process.env.PLANNER_SHOT, (await win.webContents.capturePage()).toPNG());
+  }, +(process.env.PLANNER_SHOT_DELAY || 4000)));
   applyLock();
   win.webContents.on('did-finish-load', () => { sendGeometry(); sendWallpaper(true); });
   win.on('move', sendGeometry);
@@ -128,11 +133,53 @@ function createWindow() {
   win.on('focus', () => setImmediate(pinBottom));
 
   // "Show desktop" (Win+D) minimizes normal windows; bring the widget back onto the desktop.
-  win.on('minimize', () => setTimeout(() => { win.restore(); pinBottom(); }, 150));
+  win.on('minimize', () => setTimeout(() => { win.restore(); ensureOnScreen(); pinBottom(); }, 150));
+  win.on('restore', () => setTimeout(ensureOnScreen, 200));
+  setInterval(ensureOnScreen, 5000);
 
-  const remember = () => { data.settings.bounds = win.getBounds(); saveSoon(); };
+  // Clicking elsewhere after "bring to front" sends it back to the desktop layer.
+  win.on('blur', () => endPeek());
+
+  const remember = () => { if (onScreen(win.getBounds())) { data.settings.bounds = win.getBounds(); saveSoon(); } };
   win.on('moved', remember);
   win.on('resized', remember);
+}
+
+// Windows sometimes parks the window at (-32000, -32000) after "Show desktop"; put it back.
+function onScreen(b) {
+  return screen.getAllDisplays().some((d) => {
+    const a = d.workArea;
+    return b.x + b.width - 80 > a.x && b.x + 80 < a.x + a.width && b.y + 40 > a.y && b.y + 20 < a.y + a.height;
+  });
+}
+function ensureOnScreen() {
+  if (!win || win.isDestroyed() || !win.isVisible()) return;
+  if (win.isMinimized()) { win.restore(); return; }
+  if (onScreen(win.getBounds())) return;
+  const saved = data.settings.bounds;
+  win.setBounds(saved && onScreen(saved) ? saved : defaultBounds());
+  if (!peeking) pinBottom();
+}
+
+// Desktop icon / Start menu / tray click: bring the planner in front of other windows until the
+// user clicks somewhere else, then it drops back onto the desktop.
+function bringToFront() {
+  if (!win) return;
+  if (!win.isVisible()) win.showInactive();
+  ensureOnScreen();
+  peeking = true;
+  win.setAlwaysOnTop(true);
+  win.show();
+  win.focus();
+  // If Windows refused to give it focus there will be no blur event, so drop back after a while.
+  setTimeout(() => { if (peeking && !win.isFocused()) setTimeout(endPeek, 8000); }, 600);
+  buildTrayMenu();
+}
+function endPeek() {
+  if (!peeking || !win) return;
+  peeking = false;
+  win.setAlwaysOnTop(false);
+  pinBottom();
 }
 
 function trayIcon() {
@@ -206,7 +253,7 @@ function buildTrayMenu() {
       : [];
   tray.setContextMenu(trayMenu = Menu.buildFromTemplate([
     ...updItems,
-    { label: win.isVisible() ? tr('hide') : tr('show'), click: () => { win.isVisible() ? win.hide() : (win.showInactive(), pinBottom()); buildTrayMenu(); } },
+    { label: win.isVisible() ? tr('hide') : tr('show'), click: () => { win.isVisible() ? win.hide() : bringToFront(); buildTrayMenu(); } },
     { label: data.settings.locked ? tr('unlock') : tr('lock'), click: () => setLocked(!data.settings.locked) },
     { label: tr('reset'), click: () => { win.setBounds(defaultBounds()); data.settings.bounds = win.getBounds(); saveSoon(); } },
     { type: 'separator' },
@@ -229,11 +276,11 @@ function setLocked(locked) {
 if (!process.env.PLANNER_DATA && !app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  app.on('second-instance', () => { if (win) { win.showInactive(); pinBottom(); } });
+  app.on('second-instance', () => bringToFront());
   app.whenReady().then(() => {
     createWindow();
     tray = new Tray(trayIcon());
-    tray.on('click', () => { win.showInactive(); pinBottom(); });
+    tray.on('click', () => bringToFront());
     buildTrayMenu();
   });
 }
@@ -250,6 +297,7 @@ function googleInfo() {
   return {
     hasClient: !!google.loadClient(),
     connected: !!(g && g.refresh),
+    canWrite: google.canWrite(g),
     email: g ? g.email : '',
     calendars: g && g.calendars ? g.calendars : [],
     error: googleError,
@@ -293,7 +341,7 @@ async function refreshGoogle(from, to, force) {
       const list = await google.listCalendars(g);
       const prev = new Map((g.calendars || []).map((c) => [c.id, c.enabled]));
       // first sync: show the calendars that are checked in Google Calendar itself
-      g.calendars = list.map((c) => ({ id: c.id, name: c.name, color: c.color, enabled: prev.has(c.id) ? prev.get(c.id) : (c.selected || c.primary) }));
+      g.calendars = list.map((c) => ({ id: c.id, name: c.name, color: c.color, primary: c.primary, writable: c.writable, enabled: prev.has(c.id) ? prev.get(c.id) : (c.selected || c.primary) }));
       g.listAt = Date.now();
     }
     await Promise.all(g.calendars.filter((c) => c.enabled).map(async (c) => {
@@ -382,7 +430,7 @@ ipcMain.handle('calendar-refresh', () => refreshCalendars({ force: true }));
 async function googleLogin(opts) {
   try {
     const res = await google.signIn({ ok: tr('gPageOk'), fail: tr('gPageFail'), close: tr('gPageClose') }, opts);
-    data.google = { email: res.email, refresh: res.refresh, calendars: (data.google && data.google.calendars) || [] };
+    data.google = { email: res.email, scope: res.scope, refresh: res.refresh, calendars: (data.google && data.google.calendars) || [] };
     google.primeAccess(res.access, res.expires);
     googleError = null;
     saveSoon();
@@ -410,6 +458,54 @@ ipcMain.handle('google-logout', async () => {
   saveSoon();
   return refreshCalendars();
 });
+// Add / delete events in Google Calendar from the planner (needs the calendar.events scope).
+// The local cache is updated right away so the event shows without waiting for the next sync.
+const isDay = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s), isHM = (s) => !s || /^\d{2}:\d{2}$/.test(s);
+function googleWriteError(e) {
+  if (e.code === 'invalid_grant') { if (data.google) data.google.refresh = null; googleError = 'expired'; return 'expired'; }
+  if (e.code === 403 && /insufficient/i.test((e.reason || '') + e.message)) { if (data.google) data.google.scope = ''; return 'scope'; }
+  return e.name === 'TimeoutError' ? tr('errTimeout') : e.message;
+}
+ipcMain.handle('google-add-event', async (_e, calId, ev) => {
+  const g = data.google;
+  if (!g || !g.refresh) return { ok: false, error: 'signed-out', payload: calendarPayload() };
+  if (!google.canWrite(g)) return { ok: false, error: 'scope', payload: calendarPayload() };
+  const cal = (g.calendars || []).find((c) => c.id === calId);
+  const title = String((ev && ev.title) || '').trim().slice(0, 200);
+  if (!cal || !title || !isDay(ev.date) || !isHM(ev.time) || !isHM(ev.endTime)) return { ok: false, error: 'bad-input', payload: calendarPayload() };
+  try {
+    const created = await google.createEvent(g, cal.id, { date: ev.date, time: ev.time || '', endTime: ev.endTime || '', title });
+    if (!cal.enabled) cal.enabled = true;
+    const key = 'g:' + cal.id;
+    data.calCache = data.calCache || {};
+    if (data.calCache[key]) data.calCache[key].events.push(created);
+    else data.calCache[key] = { events: [created], at: 0 }; // at: 0 → full fetch on the next refresh
+    saveSoon();
+    const payload = calendarPayload();
+    if (win) win.webContents.send('calendar-updated', payload);
+    return { ok: true, payload };
+  } catch (e) {
+    const error = googleWriteError(e);
+    return { ok: false, error, payload: calendarPayload() };
+  }
+});
+ipcMain.handle('google-delete-event', async (_e, cal, eventId) => {
+  const g = data.google;
+  if (!g || !g.refresh || typeof cal !== 'string' || !cal.startsWith('g:') || !eventId) return { ok: false, error: 'bad-input', payload: calendarPayload() };
+  if (!google.canWrite(g)) return { ok: false, error: 'scope', payload: calendarPayload() };
+  try {
+    await google.deleteEvent(g, cal.slice(2), String(eventId));
+    const entry = data.calCache && data.calCache[cal];
+    if (entry) entry.events = entry.events.filter((x) => x.id !== eventId);
+    saveSoon();
+    const payload = calendarPayload();
+    if (win) win.webContents.send('calendar-updated', payload);
+    return { ok: true, payload };
+  } catch (e) {
+    return { ok: false, error: googleWriteError(e), payload: calendarPayload() };
+  }
+});
+
 ipcMain.handle('google-toggle', async (_e, id, on) => {
   const c = data.google && (data.google.calendars || []).find((x) => x.id === id);
   if (c) c.enabled = !!on;

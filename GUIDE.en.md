@@ -71,7 +71,8 @@ One-off tasks for a given day. Type in the box at the bottom and press **Enter**
 ![Month view](docs/guide/en-month.png)
 
 - Click **Month** at the top for a full month: each day shows its completion %, to-dos and calendar events.
-- Click a date to open that day. You can still check or edit past days.
+- Click a date **once** to see its calendar events below and **add an event** right there (see section 7).
+- **Double-click** a date or click **Open day →** to open that day. You can still check or edit past days.
 - In the day view, the mini calendar is **shaded by completion**, with a white dot on perfect days.
 
 ## 6. Dashboard
@@ -88,7 +89,7 @@ Flip **📊 Dashboard** at the bottom-right; flip it again (or press Esc) to clo
 
 ## 7. Calendars
 
-Connected events are **read-only** — they're never changed by the planner and don't count toward completion. While you're using the PC they refresh every 15 minutes; refresh pauses while you're away (screen locked, idle) or the planner is hidden, and catches up as soon as you're back. Holiday calendars refresh once a day. Use **↻ Sync** in Settings to refresh right away.
+Events you add to Google Calendar on your phone show up in the planner, and events you add in the planner's Month view go straight to Google Calendar (and your phone). Calendar events don't count toward completion. While you're using the PC they refresh every 15 minutes; refresh pauses while you're away (screen locked, idle) or the planner is hidden, and catches up as soon as you're back. Holiday calendars refresh once a day. Use **↻ Sync** in Settings to refresh right away.
 
 ![Settings](docs/guide/en-settings.png)
 
@@ -99,6 +100,17 @@ Connected events are **read-only** — they're never changed by the planner and 
 4. **Allow** access; when "Google Calendar is connected" appears, you're done.
 5. Your calendars appear in Settings — tick the ones to show (holiday calendars included).
 - **↻ Sync** refreshes now; **Disconnect** signs out and revokes access.
+
+### Adding events from the planner
+1. Click **Month** at the top, then click the **date** once.
+2. Type the event in the box below and click **Add** (or press Enter).
+   - `14:00 Meeting` → 14:00, one hour
+   - `14:00-15:30 Study` → 14:00 to 15:30
+   - `Mom's birthday` → all day
+3. It goes straight into Google Calendar, so it shows on your phone too. With several calendars, pick which one next to the box.
+4. To delete, hover over the event and click **✕** → OK. It's removed from Google Calendar (and your phone) too.
+
+> If you signed in before v1.4.0, the Month view shows **"Sign in again (allow adding events)"**. Click it once and allow access.
 
 ### iCloud, Outlook and others (iCal)
 - **Outlook:** Settings → Calendar → Shared calendars → Publish a calendar → copy the **ICS** link
@@ -152,7 +164,7 @@ By design — it's a desktop widget that always stays behind other windows. Hold
 Yes. Everything is in `%APPDATA%\desktop-planner\planner-data.json`. Copy that file to back it up.
 
 **Google says "unverified app". Is it safe?**
-It appears because this personal project hasn't been reviewed by Google yet. The app only **reads** your calendar, and events and tokens stay on your computer. → [Privacy policy](PRIVACY.md)
+It appears because this personal project hasn't been reviewed by Google yet. The app shows your calendar and only changes events you add or delete in the Month view. Events and tokens stay on your computer. → [Privacy policy](PRIVACY.md)
 
 **How do I disconnect Google?**
 ⚙ Settings → Google Calendar → **Disconnect**, or remove Desktop Planner at [Google Account permissions](https://myaccount.google.com/permissions).

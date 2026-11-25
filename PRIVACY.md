@@ -10,10 +10,11 @@ Desktop Planner(이하 "앱")는 Windows 바탕화면에서 쓰는 개인용 플
 - 할 일, 고정 루틴, 체크 기록, 설정은 사용자 컴퓨터의 `%APPDATA%\desktop-planner\planner-data.json`에만 저장됩니다.
 
 **Google 캘린더 연동 (선택)**
-- 사용자가 "Google로 로그인"을 누른 경우에만, Google 캘린더 **읽기 전용 권한**(`calendar.readonly`)과 이메일 주소를 요청합니다.
+- 사용자가 "Google로 로그인"을 누른 경우에만, Google 캘린더 권한(`calendar.readonly`: 캘린더 목록·일정 보기, `calendar.events`: 일정 등록·삭제)과 이메일 주소를 요청합니다.
 - 받은 일정은 앱 화면에 표시하는 용도로만 쓰며, 사용자 컴퓨터에만 임시 저장(캐시)됩니다.
+- 일정은 **사용자가 앱의 달력 화면에서 직접 등록하거나 삭제를 눌렀을 때만** 사용자의 Google 캘린더에 만들거나 지웁니다. 그 밖의 일정은 수정·삭제하지 않습니다.
 - 로그인 토큰은 Windows 암호화(DPAPI)로 사용자 컴퓨터에만 저장됩니다.
-- 일정을 수정·삭제하거나 다른 곳으로 전송하지 않습니다.
+- 일정을 개발자나 제3자에게 전송하지 않습니다.
 - 설정의 "연결 해제"를 누르면 토큰이 삭제되고 Google 쪽 권한도 취소됩니다. [Google 계정 권한 페이지](https://myaccount.google.com/permissions)에서도 언제든 취소할 수 있습니다.
 
 **iCal 주소 연동 (선택)**
@@ -32,10 +33,11 @@ Desktop Planner ("the app") is a personal planner for the Windows desktop. The a
 - To-dos, routines, completion history and settings are stored only on your computer in `%APPDATA%\desktop-planner\planner-data.json`.
 
 **Google Calendar (optional)**
-- Only when you click "Sign in with Google", the app requests **read-only** access to Google Calendar (`calendar.readonly`) and your email address.
+- Only when you click "Sign in with Google", the app requests Google Calendar access (`calendar.readonly`: view calendars and events; `calendar.events`: add and delete events) and your email address.
 - Events are used only to display them in the app and are cached only on your computer.
+- The app creates or deletes an event in your Google Calendar **only when you add it or click delete in the app's Month view**. It never changes any other events.
 - Sign-in tokens are stored only on your computer, encrypted with Windows DPAPI.
-- The app never modifies, deletes or transfers your events.
+- Your events are never sent to the developer or any third party.
 - "Disconnect" in Settings deletes the token and revokes access. You can also revoke it any time at [Google Account permissions](https://myaccount.google.com/permissions).
 
 **iCal links (optional)**

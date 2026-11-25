@@ -19,4 +19,6 @@ contextBridge.exposeInMainWorld('planner', {
   googleLogin: () => ipcRenderer.invoke('google-login'),
   googleLogout: () => ipcRenderer.invoke('google-logout'),
   googleToggle: (id, on) => ipcRenderer.invoke('google-toggle', id, on),
+  googleAddEvent: (calId, ev) => ipcRenderer.invoke('google-add-event', calId, ev),
+  googleDeleteEvent: (cal, id) => ipcRenderer.invoke('google-delete-event', cal, id),
 });

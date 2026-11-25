@@ -176,6 +176,17 @@
   .mini.done span { text-decoration: line-through; color: var(--done); }
   .mini.done .b { background: var(--done); }
   .more { font-size: 10.5px; color: var(--ink-soft); padding-left: 7px; }
+  .cell.msel { background: rgba(var(--accent-rgb), 0.14); box-shadow: inset 0 0 0 1.5px rgba(var(--accent-rgb), 0.55); }
+  .mpanel { flex: none; margin-top: 6px; padding: 8px 10px 6px; border-radius: 12px; background: rgba(var(--base), 0.35); max-height: 42%; overflow-y: auto; }
+  .mp-head { display: flex; align-items: center; justify-content: space-between; font-size: 13px; margin-bottom: 2px; }
+  .mpanel .ev .x { opacity: 0; width: 22px; height: 22px; border-radius: 6px; flex: none; color: var(--ink-soft); }
+  .mpanel .ev:hover .x { opacity: 1; }
+  .mpanel .ev .x:hover { background: var(--chip); color: var(--sun); }
+  .mpanel .adder select { border: 0; outline: 0; border-radius: 9px; background: rgba(var(--base), 0.6); color: inherit; padding: 0 6px; max-width: 120px; font: inherit; font-size: 12px; }
+  .mpanel .gbtn { margin-top: 6px; }
+  .mp-head .txtbtn { padding: 2px 8px; border-radius: 7px; font-size: 11.5px; color: var(--ink-soft); background: var(--chip); }
+  .mp-head .txtbtn:hover { color: var(--accent); }
+  .mpanel .empty { padding: 4px 6px; }
 
   /* ---------- popover ---------- */
   .calrow { display: flex; align-items: center; gap: 7px; padding: 5px 6px; border-radius: 8px; background: var(--chip); margin-bottom: 4px; font-size: 12px; }
@@ -383,6 +394,12 @@
   <section class="month" id="monthView" hidden>
     <div class="dow" id="dowRow"></div>
     <div class="grid" id="grid"></div>
+    <div class="mpanel" id="mPanel">
+      <div class="mp-head"><b id="mpTitle"></b><button class="txtbtn" id="mpOpenDay" data-i18n="openDay"></button></div>
+      <div id="mpList"></div>
+      <div id="mpAdd"></div>
+      <div class="hint" id="mpMsg"></div>
+    </div>
   </section>
 
   <!-- hidden dashboard -->
@@ -423,14 +440,20 @@ const STR = {
     helpTitle: 'Desktop Planner 사용법', helpSub: '바탕화면에 붙어 있는 나만의 스터디 플래너예요. 이것만 알면 바로 쓸 수 있어요.',
     guideFull: '자세한 설명서 보기 →', start: '시작하기',
     tips: [
-      ['📌', '바탕화면에 붙어 있어요', '다른 창 뒤, 바탕화면에 늘 떠 있어요. 키보드의 <code>⊞ 윈도우 키 + D</code>(바탕화면 보기)를 누르면 창들이 내려가고 플래너만 보여요. 🔒 잠금을 풀면 위쪽을 끌어 옮기고 모서리로 크기를 바꿀 수 있어요.'],
+      ['📌', '바탕화면에 붙어 있어요', '다른 창 뒤, 바탕화면에 늘 떠 있어요. 바탕화면의 <b style="display:inline">Desktop Planner</b> 아이콘이나 트레이 아이콘을 누르면 잠깐 앞으로 나와요. <code>⊞ 윈도우 키 + D</code>(바탕화면 보기)로도 볼 수 있어요. 🔒 잠금을 풀면 위쪽을 끌어 옮기고 모서리로 크기를 바꿀 수 있어요.'],
       ['🔁', '고정 루틴', '"고정 루틴" 옆 <b style="display:inline">편집</b>을 눌러 매일(또는 정한 요일마다) 반복할 일을 추가하세요. 날마다 새로 체크해요.'],
       ['✅', '오늘의 할 일', '그날만 할 일을 쓰고 Enter. <code>14:00 회의 준비</code>처럼 시간을 앞에 쓰면 시간순으로 정렬돼요. 더블클릭하면 수정돼요.'],
-      ['📅', '캘린더 연동', '⚙ 설정에서 <b style="display:inline">Google로 로그인</b>하거나 iCal 주소를 넣으면 일정이 함께 보여요.'],
+      ['📅', '캘린더 연동', '⚙ 설정에서 <b style="display:inline">Google로 로그인</b>하거나 iCal 주소를 넣으면 일정이 함께 보여요. <b style="display:inline">달력</b> 화면에서 날짜를 누르고 <code>14:00 회의</code>처럼 쓰면 구글 캘린더(폰)에도 등록돼요.'],
       ['📊', '대시보드', '오른쪽 아래 토글을 켜면 연속 완수 일수, 30일 달성률 그래프, 루틴별 달성률을 볼 수 있어요.'],
       ['⚙️', '트레이 메뉴', '작업표시줄 오른쪽(시계 옆) 보라색 아이콘을 우클릭하면 숨기기, 위치 초기화, 윈도우 시작 시 자동 실행, 종료가 있어요. 안 보이면 시계 옆 <code>^</code>를 눌러 보세요.'],
     ],
-    gTitle: 'Google 캘린더', gLogin: 'Google로 로그인', gLoginHint: '브라우저에서 로그인하고 허용을 누르면 연결돼요. 일정은 보기 전용이고 15분마다 새로 받아와요.',
+    gTitle: 'Google 캘린더', gLogin: 'Google로 로그인', gLoginHint: '브라우저에서 로그인하고 허용을 누르면 연결돼요. 일정은 15분마다 새로 받아오고, 달력 화면에서 일정을 등록할 수 있어요.',
+    openDay: '하루 보기 →', mpDate: (d, w) => `${d.getMonth() + 1}월 ${d.getDate()}일 (${w})`, mpEmpty: '이 날은 캘린더 일정이 없어요.',
+    evPh: '일정 추가 (예: 14:00 회의, 14:00-15:30 스터디)', evAdd: '등록', evAdding: '등록 중…', evAdded: (c) => `구글 캘린더(${c})에 등록했어요. 폰에도 곧 떠요.`,
+    evNeedLogin: 'Google로 로그인하면 여기서 일정을 등록하고, 폰에서 등록한 일정도 볼 수 있어요.',
+    evNeedScope: '일정을 등록하려면 Google 권한을 한 번 더 허용해야 해요.', evRelogin: 'Google 다시 로그인 (일정 등록 허용)',
+    evDelAsk: (n) => `"${n}" 일정을 구글 캘린더에서 삭제할까요? 폰에서도 사라지고 되돌릴 수 없어요.`, evDeleted: '삭제했어요.',
+    evFail: (e) => `실패했어요: ${e}`, evNoWritable: '등록할 수 있는 캘린더가 없어요.',
     gWaiting: '브라우저에서 로그인을 마쳐 주세요…', gSync: '동기화', gLogout: '연결 해제', gShowCals: '표시할 캘린더', gSynced: '동기화했어요.',
     gNoClient: '이 버전에는 Google 로그인 설정(google-client.json)이 없어요.', gExpired: '로그인이 만료됐어요. 다시 로그인해 주세요.', gTimeout: '로그인 시간이 지났어요. 다시 시도해 주세요.',
     calSync: '다른 캘린더 (iCal 주소: 아이클라우드·아웃룩 등)', calNamePh: '이름 (예: 학교, 개인)', calUrlPh: 'https://… 또는 webcal://… (.ics)',
@@ -452,7 +475,7 @@ const STR = {
     sumEmpty: (w) => `${w}은 비어 있어요`, sumAll: (w) => `${w} 전부 완수! 🎉`, sumLeft: (w, n) => `${w} ${n}개 남았어요`,
     sumSub: (rd, rt, td, tt) => `루틴 ${rd}/${rt} · 할 일 ${td}/${tt}`,
     routinesEmptyEdit: '아래에서 매일 할 루틴을 추가하세요.', routinesEmpty: '고정 루틴이 없어요. 편집을 눌러 추가해 보세요.',
-    todosEmpty: '이 날만 할 일을 아래에 추가하세요.', evTip: '캘린더 일정 (보기 전용)', upEmpty: '2주 안에 예정된 일이 없어요.',
+    todosEmpty: '이 날만 할 일을 아래에 추가하세요.', evTip: '캘린더 일정 (달력 화면에서 등록·삭제할 수 있어요)', upEmpty: '2주 안에 예정된 일이 없어요.',
     more: (n) => `+${n}개 더`, since: (y, m, d) => `${y}.${m}.${d}부터 기록 중`, daysUnit: '일',
     doneOf: (d, t) => `${d}/${t} 완료`, noRecord: '기록 없음', routineDays: (d, s) => `${d}/${s}일 완료`, perRoutineEmpty: '고정 루틴을 추가하면 여기에 나와요.',
     dayTitle: (d, dow) => `${d.getMonth() + 1}월 ${d.getDate()}일 (${dow})`,
@@ -471,14 +494,20 @@ const STR = {
     helpTitle: 'Getting started', helpSub: 'Your study planner, pinned to the desktop. Here is all you need to know.',
     guideFull: 'Read the full guide →', start: 'Get started',
     tips: [
-      ['📌', 'Lives on your desktop', 'It sits on your desktop, behind other windows. Press <code>⊞ Windows key + D</code> (Show desktop) to minimize everything and see just the planner. Unlock 🔒 to drag the top bar to move it, or drag an edge to resize.'],
+      ['📌', 'Lives on your desktop', 'It sits on your desktop, behind other windows. Click the <b style="display:inline">Desktop Planner</b> desktop icon or the tray icon to bring it to the front for a moment, or press <code>⊞ Windows key + D</code> (Show desktop). Unlock 🔒 to drag the top bar to move it, or drag an edge to resize.'],
       ['🔁', 'Fixed routines', 'Click <b style="display:inline">Edit</b> next to "Fixed routines" to add things you repeat every day (or on chosen weekdays). They reset each day.'],
       ['✅', "Today's to-dos", 'Type a one-off task and press Enter. Start with a time like <code>14:00 Prep</code> or <code>2pm Prep</code> to sort by time. Double-click to edit.'],
-      ['📅', 'Calendars', 'In ⚙ Settings, <b style="display:inline">Sign in with Google</b> or add an iCal link to see your events here.'],
+      ['📅', 'Calendars', 'In ⚙ Settings, <b style="display:inline">Sign in with Google</b> or add an iCal link to see your events here. In <b style="display:inline">Month</b> view, click a date and type <code>14:00 Meeting</code> to add it to Google Calendar (and your phone).'],
       ['📊', 'Dashboard', 'Flip the toggle at the bottom-right for streaks, a 30-day completion chart and per-routine rates.'],
       ['⚙️', 'Tray menu', 'Right-click the purple tray icon (next to the clock) to hide, reset position, start with Windows, or quit. Not there? Click the <code>^</code> next to the clock.'],
     ],
-    gTitle: 'Google Calendar', gLogin: 'Sign in with Google', gLoginHint: 'Sign in and allow access in your browser. Events are read-only and refresh every 15 minutes.',
+    gTitle: 'Google Calendar', gLogin: 'Sign in with Google', gLoginHint: 'Sign in and allow access in your browser. Events refresh every 15 minutes, and you can add events from the Month view.',
+    openDay: 'Open day →', mpDate: (d, w) => `${w}, ${MON_EN[d.getMonth()]} ${d.getDate()}`, mpEmpty: 'No calendar events on this day.',
+    evPh: 'Add event (e.g. 14:00 Meeting, 14:00-15:30 Study)', evAdd: 'Add', evAdding: 'Adding…', evAdded: (c) => `Added to Google Calendar (${c}). It'll show on your phone too.`,
+    evNeedLogin: 'Sign in with Google to add events here and see events you add on your phone.',
+    evNeedScope: 'To add events, allow Google access once more.', evRelogin: 'Sign in again (allow adding events)',
+    evDelAsk: (n) => `Delete "${n}" from Google Calendar? It disappears from your phone too and can't be undone.`, evDeleted: 'Deleted.',
+    evFail: (e) => `Couldn't do that: ${e}`, evNoWritable: 'No calendar you can add events to.',
     gWaiting: 'Finish signing in in your browser…', gSync: 'Sync', gLogout: 'Disconnect', gShowCals: 'Calendars to show', gSynced: 'Synced.',
     gNoClient: 'This build has no Google sign-in setup (google-client.json).', gExpired: 'Your sign-in expired. Please sign in again.', gTimeout: 'Sign-in timed out. Please try again.',
     calSync: 'Other calendars (iCal link: iCloud, Outlook…)', calNamePh: 'Name (e.g. School, Personal)', calUrlPh: 'https://… or webcal://… (.ics)',
@@ -500,7 +529,7 @@ const STR = {
     sumEmpty: (w) => `${w}: nothing planned`, sumAll: (w) => `${w}: all done! 🎉`, sumLeft: (w, n) => `${w}: ${n} left`,
     sumSub: (rd, rt, td, tt) => `Routines ${rd}/${rt} · To-dos ${td}/${tt}`,
     routinesEmptyEdit: 'Add the routines you do every day below.', routinesEmpty: 'No fixed routines yet. Click Edit to add one.',
-    todosEmpty: 'Add one-off to-dos for this day below.', evTip: 'Calendar event (read-only)', upEmpty: 'Nothing planned in the next 2 weeks.',
+    todosEmpty: 'Add one-off to-dos for this day below.', evTip: 'Calendar event (add or delete in Month view)', upEmpty: 'Nothing planned in the next 2 weeks.',
     more: (n) => `+${n} more`, since: (y, m, d) => `tracking since ${MON_EN[m - 1]} ${d}, ${y}`, daysUnit: 'd',
     doneOf: (d, t) => `${d}/${t} done`, noRecord: 'no record', routineDays: (d, s) => `done ${d} of ${s} days`, perRoutineEmpty: 'Add fixed routines to see them here.',
     dayTitle: (d, dow) => `${dow}, ${MON_EN[d.getMonth()]} ${d.getDate()}`,
@@ -576,6 +605,16 @@ function splitTime(raw) {
     return { time: `${pad(h)}:${pad(+(m[2] || 0))}`, text: m[4].trim() };
   }
   return { time: '', text: s };
+}
+/* Calendar event input: "14:00-15:30 스터디" / "14:00~15:30 Study" → time range; otherwise splitTime. */
+function splitEvent(raw) {
+  const s = raw.trim();
+  const m = s.match(/^(\d{1,2}):(\d{2})\s*[-~–]\s*(\d{1,2}):(\d{2})\s+(.+)$/);
+  if (m && +m[1] < 24 && +m[2] < 60 && +m[3] < 24 && +m[4] < 60) {
+    return { time: `${pad(+m[1])}:${m[2]}`, endTime: `${pad(+m[3])}:${m[4]}`, title: m[5].trim() };
+  }
+  const { time, text } = splitTime(s);
+  return { time, endTime: '', title: text };
 }
 const byTime = (a, b) => (a.time || '99') < (b.time || '99') ? -1 : (a.time || '99') > (b.time || '99') ? 1 : 0;
 
@@ -861,10 +900,74 @@ function renderMonth() {
       cell.appendChild(el);
     });
     if (lines.length > 3) { const more = document.createElement('div'); more.className = 'more'; more.textContent = t('more', lines.length - 3); cell.appendChild(more); }
-    cell.onclick = () => { selected = k; miniMonth = new Date(d.getFullYear(), d.getMonth(), 1); setView('day'); };
+    if (k === mSel) cell.classList.add('msel');
+    cell.onclick = () => { if (mSel === k) return; mSel = k; renderMonth(); };
+    cell.ondblclick = () => openDay(k);
     grid.appendChild(cell);
   }
+  renderMonthPanel();
 }
+function openDay(k) { const d = parseKey(k); selected = k; miniMonth = new Date(d.getFullYear(), d.getMonth(), 1); setView('day'); }
+
+/* Month view panel: the picked date's calendar events + add to Google Calendar. */
+let mSel = today, mpBusy = false, mpCal = '';
+const writableCals = () => (gInfo.calendars || []).filter((c) => c.writable !== false && !/#holiday@/.test(c.id));
+function renderMonthPanel() {
+  const d = parseKey(mSel);
+  $('mpTitle').textContent = t('mpDate', d, DOW[d.getDay()]);
+  $('mpOpenDay').onclick = () => openDay(mSel);
+  const canDel = gInfo.connected && gInfo.canWrite;
+  const evs = eventsOn(mSel);
+  $('mpList').innerHTML = evs.length ? evs.map((e, i) => {
+    const del = canDel && e.id && String(e.cal).startsWith('g:') && writableCals().some((c) => 'g:' + c.id === e.cal);
+    return `<div class="ev"><i class="cb" style="background:${calColor(e.cal)}"></i><span class="et">${evTime(e)}</span><span class="en">${esc(e.title)}</span>${del ? `<button class="x" data-i="${i}" title="${t('del')}">✕</button>` : ''}</div>`;
+  }).join('') : `<div class="empty">${t('mpEmpty')}</div>`;
+  $('mpList').querySelectorAll('[data-i]').forEach((b) => b.onclick = async () => {
+    const e = evs[+b.dataset.i];
+    if (!confirm(t('evDelAsk', e.title))) return;
+    const r = await window.planner.googleDeleteEvent(e.cal, e.id);
+    setCalendar(r.payload);
+    $('mpMsg').textContent = r.ok ? t('evDeleted') : t('evFail', evErr(r.error));
+    render();
+  });
+
+  const box = $('mpAdd');
+  const relogin = async () => {
+    mpBusy = true; renderMonthPanel();
+    try { setCalendar(await window.planner.googleLogin()); } finally { mpBusy = false; render(); }
+  };
+  if (!gInfo.connected || !gInfo.canWrite) {
+    const need = gInfo.connected ? 'evNeedScope' : 'evNeedLogin';
+    box.innerHTML = `<div class="hint">${t(need)}</div><button class="gbtn" id="mpLogin"${mpBusy ? ' disabled' : ''}>${G_LOGO}${mpBusy ? t('gWaiting') : gInfo.connected ? t('evRelogin') : t('gLogin')}</button>`;
+    $('mpLogin').onclick = relogin;
+    return;
+  }
+  const cals = writableCals();
+  if (!cals.length) { box.innerHTML = `<div class="hint">${t('evNoWritable')}</div>`; return; }
+  if (!cals.some((c) => c.id === mpCal)) mpCal = (cals.find((c) => c.primary) || cals[0]).id;
+  const keep = $('mpInput') ? $('mpInput').value : '';
+  box.innerHTML = `<div class="adder"><input id="mpInput" maxlength="200" placeholder="${esc(t('evPh'))}">
+    ${cals.length > 1 ? `<select id="mpCal">${cals.map((c) => `<option value="${esc(c.id)}"${c.id === mpCal ? ' selected' : ''}>${esc(c.name)}</option>`).join('')}</select>` : ''}
+    <button id="mpAddBtn"${mpBusy ? ' disabled' : ''}>${mpBusy ? t('evAdding') : t('evAdd')}</button></div>`;
+  $('mpInput').value = keep;
+  if ($('mpCal')) $('mpCal').onchange = (e) => { mpCal = e.target.value; };
+  const add = async () => {
+    const v = $('mpInput').value.trim();
+    if (!v || mpBusy) return;
+    const ev = splitEvent(v);
+    mpBusy = true; $('mpMsg').textContent = ''; renderMonthPanel();
+    let r;
+    try { r = await window.planner.googleAddEvent(mpCal, { date: mSel, ...ev }); } finally { mpBusy = false; }
+    setCalendar(r.payload);
+    if (r.ok) { $('mpInput').value = ''; $('mpMsg').textContent = t('evAdded', (cals.find((c) => c.id === mpCal) || {}).name || ''); }
+    else $('mpMsg').textContent = t('evFail', evErr(r.error));
+    render();
+    $('mpInput') && $('mpInput').focus();
+  };
+  $('mpAddBtn').onclick = add;
+  $('mpInput').onkeydown = (e) => { if (e.key === 'Enter' && !e.isComposing) add(); };
+}
+const evErr = (e) => e === 'scope' ? t('evNeedScope') : e === 'expired' || e === 'signed-out' ? t('gExpired') : e === 'bad-input' ? '?' : e;
 
 /* ---------- dashboard ---------- */
 function setDash(open) {
@@ -970,6 +1073,7 @@ function render() {
   applySettings();
 }
 function setView(v) {
+  if (v === 'month' && view !== 'month') { mSel = selected; const d = parseKey(selected); bigMonth = new Date(d.getFullYear(), d.getMonth(), 1); $('mpMsg').textContent = ''; }
   view = v;
   if (v !== 'day') closeDash();
   $('vDay').classList.toggle('on', v === 'day');
@@ -1016,7 +1120,7 @@ $('next').onclick = () => {
 };
 $('mPrev').onclick = () => { miniMonth = new Date(miniMonth.getFullYear(), miniMonth.getMonth() - 1, 1); renderSide(); };
 $('mNext').onclick = () => { miniMonth = new Date(miniMonth.getFullYear(), miniMonth.getMonth() + 1, 1); renderSide(); };
-$('goToday').onclick = () => { selected = today; miniMonth = new Date(); bigMonth = new Date(); render(); };
+$('goToday').onclick = () => { selected = today; mSel = today; miniMonth = new Date(); bigMonth = new Date(); render(); };
 $('vDay').onclick = () => setView('day');
 $('vMonth').onclick = () => setView('month');
 $('dashClose').onclick = closeDash;

@@ -1,6 +1,6 @@
 // Google Calendar sign-in (OAuth 2.0 for desktop apps: system browser + loopback redirect + PKCE)
-// and read-only event fetching. Tokens never leave this PC; the refresh token is encrypted with
-// Windows DPAPI via Electron safeStorage.
+// event fetching, and adding / deleting events the user enters in the planner. Tokens never leave
+// this PC; the refresh token is encrypted with Windows DPAPI via Electron safeStorage.
 
 const http = require('http');
 const crypto = require('crypto');
@@ -8,7 +8,10 @@ const fs = require('fs');
 const path = require('path');
 const { shell, safeStorage, net } = require('electron');
 
-const SCOPES = 'openid email https://www.googleapis.com/auth/calendar.readonly';
+// calendar.readonly: list calendars + read events. calendar.events: add / delete events from the planner.
+const SCOPES = 'openid email https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events';
+const WRITE_SCOPE = 'https://www.googleapis.com/auth/calendar.events';
+const canWrite = (account) => !!(account && account.scope && account.scope.split(' ').includes(WRITE_SCOPE));
 const DAY_MS = 86400000;
 
 // Developers supply their own OAuth client (Desktop app type) in google-client.json, which is git-ignored.
@@ -85,7 +88,7 @@ async function signIn(pages, opts = {}) {
     if (!tok.refresh_token) throw new Error('no refresh token');
     let email = '';
     try { email = JSON.parse(Buffer.from(tok.id_token.split('.')[1], 'base64').toString('utf8')).email || ''; } catch { /* optional */ }
-    return { email, refresh: encrypt(tok.refresh_token), access: tok.access_token, expires: Date.now() + (tok.expires_in - 60) * 1000 };
+    return { email, scope: tok.scope || '', refresh: encrypt(tok.refresh_token), access: tok.access_token, expires: Date.now() + (tok.expires_in - 60) * 1000 };
   } finally {
     server.close();
   }
@@ -106,9 +109,13 @@ async function accessToken(account) {
 }
 function primeAccess(token, expires) { accessCache = token ? { token, expires } : null; }
 
-async function api(account, url) {
-  const res = await net.fetch(url, { headers: { Authorization: `Bearer ${await accessToken(account)}` }, signal: AbortSignal.timeout(20000) });
-  const body = await res.json().catch(() => ({}));
+async function api(account, url, opts = {}) {
+  const headers = { Authorization: `Bearer ${await accessToken(account)}` };
+  if (opts.body) headers['Content-Type'] = 'application/json';
+  const res = await net.fetch(url, {
+    method: opts.method || 'GET', headers, body: opts.body ? JSON.stringify(opts.body) : undefined, signal: AbortSignal.timeout(20000),
+  });
+  const body = res.status === 204 ? {} : await res.json().catch(() => ({}));
   if (!res.ok) {
     const e = new Error((body.error && body.error.message) || `HTTP ${res.status}`);
     e.code = res.status;
@@ -130,7 +137,10 @@ async function listCalendars(account) {
     items.push(...(b.items || []));
     page = b.nextPageToken || '';
   } while (page);
-  return items.map((c) => ({ id: c.id, name: c.summaryOverride || c.summary || c.id, color: c.backgroundColor || '#4285f4', primary: !!c.primary, selected: !!c.selected }));
+  return items.map((c) => ({
+    id: c.id, name: c.summaryOverride || c.summary || c.id, color: c.backgroundColor || '#4285f4', primary: !!c.primary, selected: !!c.selected,
+    writable: c.accessRole === 'owner' || c.accessRole === 'writer',
+  }));
 }
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -144,7 +154,7 @@ async function listEvents(account, calId, from, to) {
   do {
     const q = new URLSearchParams({
       timeMin: new Date(from).toISOString(), timeMax: new Date(to).toISOString(), singleEvents: 'true',
-      orderBy: 'startTime', maxResults: '2500', fields: 'items(summary,start,end,status),nextPageToken',
+      orderBy: 'startTime', maxResults: '2500', fields: 'items(id,summary,start,end,status),nextPageToken',
     });
     if (page) q.set('pageToken', page);
     const b = await api(account, `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events?${q}`);
@@ -156,16 +166,47 @@ async function listEvents(account, calId, from, to) {
         const days = Math.min(62, Math.max(1, Math.round((en - s) / DAY_MS)));
         for (let i = 0; i < days; i++) {
           const d = new Date(s.getFullYear(), s.getMonth(), s.getDate() + i);
-          if (d.getTime() >= from && d.getTime() < to) out.push({ date: dayKey(d), time: '', endTime: '', title, allDay: true });
+          if (d.getTime() >= from && d.getTime() < to) out.push({ id: e.id, date: dayKey(d), time: '', endTime: '', title, allDay: true });
         }
       } else if (e.start.dateTime) {
-        const s = new Date(e.start.dateTime), en = e.end && e.end.dateTime ? new Date(e.end.dateTime) : s;
-        out.push({ date: dayKey(s), time: hm(s), endTime: en > s && dayKey(en) === dayKey(s) ? hm(en) : '', title, allDay: false });
+        out.push(timedEvent(e.id, title, new Date(e.start.dateTime), e.end && e.end.dateTime ? new Date(e.end.dateTime) : null));
       }
     }
     page = b.nextPageToken || '';
   } while (page);
   return out;
+}
+const timedEvent = (id, title, s, en) => ({ id, date: dayKey(s), time: hm(s), endTime: en && en > s && dayKey(en) === dayKey(s) ? hm(en) : '', title, allDay: false });
+
+// ev = { date: 'YYYY-MM-DD', time: 'HH:MM' | '', endTime: 'HH:MM' | '', title }
+// No time → all-day event. Time without an end → one hour long. Returns the event in listEvents' shape.
+async function createEvent(account, calId, ev) {
+  const body = { summary: ev.title };
+  if (!ev.time) {
+    const s = parseDate(ev.date);
+    body.start = { date: ev.date };
+    body.end = { date: dayKey(new Date(s.getFullYear(), s.getMonth(), s.getDate() + 1)) };
+  } else {
+    const [y, m, d] = ev.date.split('-').map(Number);
+    const at = (t) => { const [h, mi] = t.split(':').map(Number); return new Date(y, m - 1, d, h, mi); };
+    const s = at(ev.time);
+    let en = ev.endTime ? at(ev.endTime) : new Date(s.getTime() + 3600000);
+    if (en <= s) en = new Date(s.getTime() + 3600000);
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    body.start = { dateTime: s.toISOString(), timeZone: tz };
+    body.end = { dateTime: en.toISOString(), timeZone: tz };
+  }
+  const r = await api(account, `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events?fields=id`, { method: 'POST', body });
+  if (!ev.time) return { id: r.id, date: ev.date, time: '', endTime: '', title: ev.title, allDay: true };
+  return timedEvent(r.id, ev.title, new Date(body.start.dateTime), new Date(body.end.dateTime));
+}
+
+async function deleteEvent(account, calId, eventId) {
+  try {
+    await api(account, `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events/${encodeURIComponent(eventId)}`, { method: 'DELETE' });
+  } catch (e) {
+    if (e.code !== 404 && e.code !== 410) throw e; // already gone
+  }
 }
 
 async function revoke(account) {
@@ -175,4 +216,4 @@ async function revoke(account) {
   try { await postForm('https://oauth2.googleapis.com/revoke', { token: refresh }); } catch { /* already revoked */ }
 }
 
-module.exports = { loadClient, signIn, listCalendars, listEvents, revoke, primeAccess, callCount };
+module.exports = { loadClient, signIn, listCalendars, listEvents, createEvent, deleteEvent, canWrite, revoke, primeAccess, callCount };
