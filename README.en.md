@@ -27,7 +27,8 @@ Check off fixed daily routines and each day's to-dos, and look back on your prog
 - **Sign in with Google** — one click shows your Google Calendar events (holidays included) right in the planner; pick which calendars to show (refreshed every 15 minutes while you're using the PC).
 - **Add events from the Month view** — click a date, type `14:00 Meeting`, and it goes straight to Google Calendar and your phone. Events you add on your phone show up in the planner too.
 - **iCal subscriptions** — also connect iCloud, Outlook or any calendar that offers an iCal (ICS) link.
-- **Month view**, move unfinished past to-dos to today, start with Windows.
+- **Month view** — click a date once to open that day's events and to-dos below (click again to close); double-click to jump to that day.
+- Move unfinished past to-dos to today, start with Windows.
 
 ![Dashboard](docs/screenshot-dashboard-en.png)
 
