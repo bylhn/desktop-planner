@@ -3,6 +3,13 @@
 바탕화면에 붙어 있는 **투명 스터디 플래너 위젯**입니다.
 매일 반복하는 고정 루틴과 그날그날의 할 일을 체크하고, 달성 기록을 그래프로 돌아볼 수 있어요.
 
+<p align="center">
+  <a href="https://github.com/bylhn/desktop-planner/releases/latest">
+    <img src="https://img.shields.io/github/v/release/bylhn/desktop-planner?style=for-the-badge&logo=windows&logoColor=white&label=Windows%20%EB%8B%A4%EC%9A%B4%EB%A1%9C%EB%93%9C&color=6b5cff" alt="Windows 다운로드" height="44">
+  </a>
+</p>
+<p align="center"><sub>Windows 10/11 (64비트) · 무료 · 로그인 불필요</sub></p>
+
 ![하루 화면](docs/screenshot-day.png)
 
 ## 주요 기능
@@ -20,7 +27,7 @@
 
 ## 설치 (일반 사용자)
 
-1. [Releases](../../releases) 페이지에서 `DesktopPlanner-Setup-x.y.z.exe`를 내려받아 실행하세요.
+1. 위의 **Windows 다운로드** 버튼(또는 [최신 릴리스 페이지](https://github.com/bylhn/desktop-planner/releases/latest))에서 `DesktopPlanner-Setup-x.y.z.exe`를 내려받아 실행하세요.
 2. 코드 서명이 없는 개인 프로젝트라 Windows가 "PC 보호" 경고를 띄울 수 있어요. **추가 정보 → 실행**을 누르면 설치됩니다.
 3. 설치가 끝나면 바탕화면에 플래너가 나타나요. 작업표시줄 오른쪽의 트레이 아이콘을 우클릭하면 자동 실행, 위치 초기화, 종료 메뉴가 있어요.
 
