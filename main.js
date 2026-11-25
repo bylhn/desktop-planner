@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen, net } = re
 const path = require('path');
 const fs = require('fs');
 const { expandICS } = require('./ics');
+const google = require('./google');
 
 // ---------- Win32: keep the window at the bottom of the z-order (desktop widget) ----------
 let SetWindowPos = null;
@@ -110,7 +111,8 @@ function createWindow() {
     backgroundColor: '#00000000',
     webPreferences: { preload: path.join(__dirname, 'preload.js') },
   });
-  win.loadFile('index.html', process.env.PLANNER_DASH ? { query: { dash: '1' } } : undefined);
+  // PLANNER_OPEN=dash|settings opens a panel on start (used for screenshots/testing)
+  win.loadFile('index.html', process.env.PLANNER_OPEN ? { query: { open: process.env.PLANNER_OPEN } } : undefined);
   applyLock();
   win.webContents.on('did-finish-load', () => { sendGeometry(); sendWallpaper(true); });
   win.on('move', sendGeometry);
@@ -173,12 +175,14 @@ const TR = {
     reset: '위치 초기화', autostart: '윈도우 시작 시 자동 실행', quit: '종료',
     errUrl: 'http(s)로 시작하는 주소가 아니에요', errHttp: (s) => `서버 응답 오류 (${s})`, errBig: '파일이 너무 커요',
     errFormat: 'iCal 형식이 아니에요. "iCal/ICS 주소"를 넣어 주세요', errTimeout: '응답이 없어요 (시간 초과)',
+    gPageOk: '✅ Google 캘린더가 연결됐어요', gPageFail: '연결하지 못했어요', gPageClose: '이 창을 닫고 플래너로 돌아가세요.',
   },
   en: {
     tip: 'Desktop Planner', hide: 'Hide planner', show: 'Show planner', unlock: 'Unlock (move / resize)', lock: 'Lock position',
     reset: 'Reset position', autostart: 'Start with Windows', quit: 'Quit',
     errUrl: 'The link must start with http(s)', errHttp: (s) => `Server error (${s})`, errBig: 'The file is too large',
     errFormat: 'Not an iCal feed. Paste the calendar\'s iCal/ICS link', errTimeout: 'No response (timed out)',
+    gPageOk: '✅ Google Calendar is connected', gPageFail: 'Could not connect', gPageClose: 'You can close this tab and go back to the planner.',
   },
 };
 function lang() {
@@ -226,11 +230,55 @@ if (!process.env.PLANNER_DATA && !app.requestSingleInstanceLock()) {
 const calStatus = {}; // id -> { ok, count, error, at }
 let calRefreshing = null;
 
+// data.google = { email, refresh (encrypted), calendars: [{id, name, color, enabled}] }
+let googleError = null; // last Google error code/message for the settings panel
+
+function googleInfo() {
+  const g = data.google;
+  return {
+    hasClient: !!google.loadClient(),
+    connected: !!(g && g.refresh),
+    email: g ? g.email : '',
+    calendars: g && g.calendars ? g.calendars : [],
+    error: googleError,
+  };
+}
+
 function calendarPayload() {
-  const cals = (data.settings.calendars || []).filter((c) => c.enabled !== false);
   const events = [];
-  for (const c of cals) for (const e of (data.calCache?.[c.id]?.events || [])) events.push({ ...e, cal: c.id });
-  return { events, status: calStatus };
+  const meta = {};
+  for (const c of (data.settings.calendars || []).filter((x) => x.enabled !== false)) {
+    meta[c.id] = { color: c.color, name: c.name };
+    for (const e of (data.calCache?.[c.id]?.events || [])) events.push({ ...e, cal: c.id });
+  }
+  if (data.google && data.google.refresh) {
+    for (const c of (data.google.calendars || []).filter((x) => x.enabled)) {
+      const id = 'g:' + c.id;
+      meta[id] = { color: c.color, name: c.name };
+      for (const e of (data.calCache?.[id]?.events || [])) events.push({ ...e, cal: id });
+    }
+  }
+  return { events, status: calStatus, meta, google: googleInfo() };
+}
+
+async function refreshGoogle(from, to) {
+  const g = data.google;
+  if (!g || !g.refresh) return;
+  try {
+    const list = await google.listCalendars(g);
+    const prev = new Map((g.calendars || []).map((c) => [c.id, c.enabled]));
+    // first sync: show the calendars that are checked in Google Calendar itself
+    g.calendars = list.map((c) => ({ id: c.id, name: c.name, color: c.color, enabled: prev.has(c.id) ? prev.get(c.id) : (c.selected || c.primary) }));
+    await Promise.all(g.calendars.filter((c) => c.enabled).map(async (c) => {
+      data.calCache['g:' + c.id] = { events: await google.listEvents(g, c.id, from, to), at: Date.now() };
+    }));
+    googleError = null;
+  } catch (e) {
+    if (e.code === 'invalid_grant') { // revoked in Google account settings, or expired (test-mode apps expire weekly)
+      g.refresh = null;
+      googleError = 'expired';
+    } else googleError = e.name === 'TimeoutError' ? tr('errTimeout') : e.message;
+  }
 }
 
 async function fetchFeed(c, from, to) {
@@ -252,10 +300,12 @@ function refreshCalendars() {
     const from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 120).getTime();
     const to = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 240).getTime();
     data.calCache = data.calCache || {};
-    // forget feeds that were removed
+    // forget feeds that were removed (Google calendars are kept while they're enabled)
     const ids = new Set((data.settings.calendars || []).map((c) => c.id));
+    if (data.google && data.google.refresh) for (const c of data.google.calendars || []) if (c.enabled) ids.add('g:' + c.id);
     for (const id of Object.keys(data.calCache)) if (!ids.has(id)) delete data.calCache[id];
     for (const id of Object.keys(calStatus)) if (!ids.has(id)) delete calStatus[id];
+    const googleJob = refreshGoogle(from, to);
     await Promise.all(cals.map(async (c) => {
       try {
         const events = await fetchFeed(c, from, to);
@@ -265,6 +315,7 @@ function refreshCalendars() {
         calStatus[c.id] = { ok: false, error: e.name === 'TimeoutError' ? tr('errTimeout') : e.message, at: Date.now() };
       }
     }));
+    await googleJob;
     saveSoon();
     const payload = calendarPayload();
     if (win) win.webContents.send('calendar-updated', payload);
@@ -279,6 +330,44 @@ app.whenReady().then(() => {
 });
 ipcMain.handle('calendar-get', () => calendarPayload());
 ipcMain.handle('calendar-refresh', () => refreshCalendars());
+
+async function googleLogin(opts) {
+  try {
+    const res = await google.signIn({ ok: tr('gPageOk'), fail: tr('gPageFail'), close: tr('gPageClose') }, opts);
+    data.google = { email: res.email, refresh: res.refresh, calendars: (data.google && data.google.calendars) || [] };
+    google.primeAccess(res.access, res.expires);
+    googleError = null;
+    saveSoon();
+  } catch (e) {
+    googleError = e.code === 'no-client' ? 'no-client' : e.message === 'timeout' ? 'timeout' : e.message;
+  }
+  return refreshCalendars();
+}
+ipcMain.handle('google-login', () => googleLogin());
+// Helper sign-in: PLANNER_AUTH_URL_FILE=<path> starts a sign-in on launch and writes the Google URL
+// to that file instead of opening the default browser (handy when that browser isn't the signed-in one).
+app.whenReady().then(() => {
+  const file = process.env.PLANNER_AUTH_URL_FILE;
+  if (!file) return;
+  setTimeout(() => googleLogin({ openBrowser: false, onUrl: (u) => fs.writeFileSync(file, u, 'utf8') }).then(() => {
+    fs.writeFileSync(file + '.done', googleError ? 'error: ' + googleError : 'ok', 'utf8');
+  }), 2000);
+});
+ipcMain.handle('google-logout', async () => {
+  await google.revoke(data.google);
+  google.primeAccess(null);
+  data.google = null;
+  googleError = null;
+  for (const id of Object.keys(data.calCache || {})) if (id.startsWith('g:')) delete data.calCache[id];
+  saveSoon();
+  return refreshCalendars();
+});
+ipcMain.handle('google-toggle', async (_e, id, on) => {
+  const c = data.google && (data.google.calendars || []).find((x) => x.id === id);
+  if (c) c.enabled = !!on;
+  saveSoon();
+  return refreshCalendars();
+});
 
 ipcMain.handle('load', () => data);
 ipcMain.on('save-todos', (_e, todos) => { data.todos = todos; saveSoon(); });

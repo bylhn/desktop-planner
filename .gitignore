@@ -3,3 +3,6 @@ dist/
 *.log
 planner-data.json
 test-data.json
+# Google OAuth client (Desktop app). Each developer/build supplies their own.
+google-client.json
+client_secret*.json
