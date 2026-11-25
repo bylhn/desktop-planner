@@ -166,16 +166,39 @@ function setAutoStart(on) {
   } catch (e) { console.error('auto-start change failed', e); }
 }
 
+// ---------- i18n (tray menu + calendar errors; the window has its own strings) ----------
+const TR = {
+  ko: {
+    tip: '데스크톱 플래너', hide: '플래너 숨기기', show: '플래너 보이기', unlock: '잠금 해제 (이동/크기 조절)', lock: '위치 잠그기',
+    reset: '위치 초기화', autostart: '윈도우 시작 시 자동 실행', quit: '종료',
+    errUrl: 'http(s)로 시작하는 주소가 아니에요', errHttp: (s) => `서버 응답 오류 (${s})`, errBig: '파일이 너무 커요',
+    errFormat: 'iCal 형식이 아니에요. "iCal/ICS 주소"를 넣어 주세요', errTimeout: '응답이 없어요 (시간 초과)',
+  },
+  en: {
+    tip: 'Desktop Planner', hide: 'Hide planner', show: 'Show planner', unlock: 'Unlock (move / resize)', lock: 'Lock position',
+    reset: 'Reset position', autostart: 'Start with Windows', quit: 'Quit',
+    errUrl: 'The link must start with http(s)', errHttp: (s) => `Server error (${s})`, errBig: 'The file is too large',
+    errFormat: 'Not an iCal feed. Paste the calendar\'s iCal/ICS link', errTimeout: 'No response (timed out)',
+  },
+};
+function lang() {
+  const l = data.settings.lang;
+  if (l === 'ko' || l === 'en') return l;
+  return (app.getLocale() || '').toLowerCase().startsWith('ko') ? 'ko' : 'en';
+}
+const tr = (k, ...a) => { const v = TR[lang()][k]; return typeof v === 'function' ? v(...a) : v; };
+
 function buildTrayMenu() {
   const login = isAutoStart();
+  tray.setToolTip(tr('tip'));
   tray.setContextMenu(Menu.buildFromTemplate([
-    { label: win.isVisible() ? '플래너 숨기기' : '플래너 보이기', click: () => { win.isVisible() ? win.hide() : (win.showInactive(), pinBottom()); buildTrayMenu(); } },
-    { label: data.settings.locked ? '잠금 해제 (이동/크기 조절)' : '위치 잠그기', click: () => setLocked(!data.settings.locked) },
-    { label: '위치 초기화', click: () => { win.setBounds(defaultBounds()); data.settings.bounds = win.getBounds(); saveSoon(); } },
+    { label: win.isVisible() ? tr('hide') : tr('show'), click: () => { win.isVisible() ? win.hide() : (win.showInactive(), pinBottom()); buildTrayMenu(); } },
+    { label: data.settings.locked ? tr('unlock') : tr('lock'), click: () => setLocked(!data.settings.locked) },
+    { label: tr('reset'), click: () => { win.setBounds(defaultBounds()); data.settings.bounds = win.getBounds(); saveSoon(); } },
     { type: 'separator' },
-    { label: '윈도우 시작 시 자동 실행', type: 'checkbox', checked: login, click: (item) => { setAutoStart(item.checked); buildTrayMenu(); } },
+    { label: tr('autostart'), type: 'checkbox', checked: login, click: (item) => { setAutoStart(item.checked); buildTrayMenu(); } },
     { type: 'separator' },
-    { label: '종료', click: () => { saveNow(); app.exit(0); } },
+    { label: tr('quit'), click: () => { saveNow(); app.exit(0); } },
   ]));
 }
 
@@ -194,7 +217,6 @@ if (!process.env.PLANNER_DATA && !app.requestSingleInstanceLock()) {
   app.whenReady().then(() => {
     createWindow();
     tray = new Tray(trayIcon());
-    tray.setToolTip('데스크톱 플래너');
     tray.on('click', () => { win.showInactive(); pinBottom(); });
     buildTrayMenu();
   });
@@ -213,12 +235,12 @@ function calendarPayload() {
 
 async function fetchFeed(c, from, to) {
   const url = String(c.url || '').trim().replace(/^webcal:\/\//i, 'https://');
-  if (!/^https?:\/\//i.test(url)) throw new Error('http(s)로 시작하는 주소가 아니에요');
+  if (!/^https?:\/\//i.test(url)) throw new Error(tr('errUrl'));
   const res = await net.fetch(url, { signal: AbortSignal.timeout(20000), headers: { Accept: 'text/calendar, */*' } });
-  if (!res.ok) throw new Error(`서버 응답 오류 (${res.status})`);
+  if (!res.ok) throw new Error(tr('errHttp', res.status));
   const text = await res.text();
-  if (text.length > 15 * 1024 * 1024) throw new Error('파일이 너무 커요');
-  if (!text.includes('BEGIN:VCALENDAR')) throw new Error('iCal 형식이 아니에요. "iCal/ICS 주소"를 넣어 주세요');
+  if (text.length > 15 * 1024 * 1024) throw new Error(tr('errBig'));
+  if (!text.includes('BEGIN:VCALENDAR')) throw new Error(tr('errFormat'));
   return expandICS(text, from, to);
 }
 
@@ -240,7 +262,7 @@ function refreshCalendars() {
         data.calCache[c.id] = { events, at: Date.now() };
         calStatus[c.id] = { ok: true, count: events.length, at: Date.now() };
       } catch (e) {
-        calStatus[c.id] = { ok: false, error: e.name === 'TimeoutError' ? '응답이 없어요 (시간 초과)' : e.message, at: Date.now() };
+        calStatus[c.id] = { ok: false, error: e.name === 'TimeoutError' ? tr('errTimeout') : e.message, at: Date.now() };
       }
     }));
     saveSoon();
@@ -262,7 +284,7 @@ ipcMain.handle('load', () => data);
 ipcMain.on('save-todos', (_e, todos) => { data.todos = todos; saveSoon(); });
 ipcMain.on('save-settings', (_e, s) => {
   delete s.bounds; // the main process owns window bounds
-  const lockChanged = s.locked !== data.settings.locked;
+  const lockChanged = s.locked !== data.settings.locked || s.lang !== data.settings.lang;
   const blurChanged = s.blur !== undefined && s.blur !== data.settings.blur;
   data.settings = Object.assign(data.settings, s);
   if (lockChanged) { applyLock(); buildTrayMenu(); }

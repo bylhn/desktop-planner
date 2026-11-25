@@ -12,9 +12,9 @@ Check off fixed daily routines and each day's to-dos, and look back on your prog
 </p>
 <p align="center"><sub>Windows 10/11 (64-bit) · Free · No account needed</sub></p>
 
-> **Note:** the app's interface is currently in Korean. The tables below give the Korean label next to each English name so you can find your way around.
+> The app is available in **English and Korean**. It follows your Windows language, and you can switch any time in ⚙ Settings → Language.
 
-![Day view](docs/screenshot-day.png)
+![Day view](docs/screenshot-day-en.png)
 
 ## Features
 
@@ -27,7 +27,7 @@ Check off fixed daily routines and each day's to-dos, and look back on your prog
 - **Calendar subscriptions** — show events from any calendar that offers an iCal (ICS) link: Google, Outlook, Apple, and more (read-only, refreshed every 15 minutes).
 - **Month view**, move unfinished past to-dos to today, start with Windows.
 
-![Dashboard](docs/screenshot-dashboard.png)
+![Dashboard](docs/screenshot-dashboard-en.png)
 
 ## Install
 
@@ -39,25 +39,16 @@ Check off fixed daily routines and each day's to-dos, and look back on your prog
 
 ## How to use
 
-| To do this | Do this (Korean label) |
+| To do this | Do this |
 |---|---|
 | Move / resize | Click 🔒 to unlock → drag the top bar to move, drag an edge to resize → lock again |
-| Add a fixed routine | Click **편집** (Edit) next to **고정 루틴** (Fixed routines) → type it, pick weekdays (none = every day) |
-| Add a to-do | Type in the box at the bottom and press Enter (a leading time like `07:00 Wake up` works) |
+| Add a fixed routine | Click **Edit** next to **Fixed routines** → type it, pick weekdays (none = every day) |
+| Add a to-do | Type in the box at the bottom and press Enter. A leading time sorts it: `07:00 Wake up` or `7am Wake up` |
 | Edit / delete | Double-click the text to edit; hover and click ✕ to delete |
 | See another day | ◀ ▶ at the top, or click a date in the mini calendar |
-| Dashboard | Toggle **📊 대시보드** (Dashboard) at the bottom-right (Esc also closes it) |
-| Subscribe to a calendar | ⚙ Settings → **캘린더 연동** (Calendar sync) → paste an iCal link → **추가** (Add) |
-
-| Korean | English |
-|---|---|
-| 하루 / 달력 | Day / Month |
-| 오늘 | Today |
-| 고정 루틴 | Fixed routines |
-| 오늘의 할 일 | Today's to-dos |
-| 다가오는 일정 | Upcoming |
-| 배경 투명도 / 글씨 색 / 배경 흐림 | Background opacity / Text color / Background blur |
-| 못 끝낸 지난 할 일 → 오늘로 옮기기 | Move unfinished past to-dos to today |
+| Dashboard | Toggle **📊 Dashboard** at the bottom-right (Esc also closes it) |
+| Subscribe to a calendar | ⚙ Settings → **Calendar sync** → paste an iCal link → **Add** |
+| Change language | ⚙ Settings → **Language** → 한국어 / English |
 
 ### Finding your calendar's iCal link
 
