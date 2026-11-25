@@ -146,7 +146,7 @@ Click the tray icon, or right-click → "Show planner". If it's off-screen, use 
 Click the **^** arrow next to the clock to show hidden icons. The purple checklist icon is the planner.
 
 **It won't come in front of other windows.**
-By design — it's a desktop widget that always stays behind other windows. Press `Win + D` to see it.
+By design — it's a desktop widget that always stays behind other windows. Hold the **⊞ Windows key and press D** (Show desktop) to minimize everything and see it; press it again to bring your windows back.
 
 **Is my data kept after a restart?**
 Yes. Everything is in `%APPDATA%\desktop-planner\planner-data.json`. Copy that file to back it up.

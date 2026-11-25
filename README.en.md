@@ -18,7 +18,7 @@ Check off fixed daily routines and each day's to-dos, and look back on your prog
 
 ## Features
 
-- **Pinned to the desktop** — no taskbar button; it always stays behind other windows, right on your desktop. It survives `Win + D`.
+- **Pinned to the desktop** — no taskbar button; it always stays behind other windows, right on your desktop. Press **⊞ Windows key + D** (Show desktop) to hide other windows and see just the planner.
 - **Frosted-glass look** — shows a blurred copy of your wallpaper; adjustable transparency and light/dark text.
 - **Fixed routines** — a checklist that comes back every day, or only on the weekdays you pick.
 - **Today's to-dos** — one-off tasks for a given day. Start with a time, like `14:00 Prepare meeting`, and they are sorted by time.
