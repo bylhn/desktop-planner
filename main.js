@@ -33,7 +33,7 @@ const dataFile = process.env.PLANNER_DATA || path.join(app.getPath('userData'), 
 const backupDir = path.join(path.dirname(dataFile), 'backups');
 const KEEP_BACKUPS = 30;
 const hasContent = (d) => d && ((d.todos && Object.keys(d.todos).length) || (d.settings && (d.settings.routines || []).length));
-function readJson(file) { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; } }
+function readJson(file) { try { return JSON.parse(fs.readFileSync(file, 'utf8').replace(/^﻿/, '')); } catch { return null; } } // tolerate a BOM from hand-edited files
 function newestBackup() {
   try {
     const files = fs.readdirSync(backupDir).filter((f) => /^planner-data-\d{4}-\d{2}-\d{2}\.json$/.test(f)).sort().reverse();

@@ -28,10 +28,14 @@ const b64url = (buf) => buf.toString('base64').replace(/\+/g, '-').replace(/\//g
 function encrypt(s) {
   return safeStorage.isEncryptionAvailable() ? 'dpapi:' + safeStorage.encryptString(s).toString('base64') : 'plain:' + s;
 }
+// A token encrypted under another Windows profile / app copy can't be decrypted here: treat it as
+// signed out (the UI then asks to sign in again) instead of surfacing a crypto error.
 function decrypt(s) {
   if (!s) return null;
-  if (s.startsWith('dpapi:')) return safeStorage.decryptString(Buffer.from(s.slice(6), 'base64'));
-  if (s.startsWith('plain:')) return s.slice(6);
+  try {
+    if (s.startsWith('dpapi:')) return safeStorage.decryptString(Buffer.from(s.slice(6), 'base64'));
+    if (s.startsWith('plain:')) return s.slice(6);
+  } catch (e) { console.warn('stored Google token unreadable; sign-in needed', e.message); }
   return null;
 }
 
