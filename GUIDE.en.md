@@ -88,7 +88,7 @@ Flip **📊 Dashboard** at the bottom-right; flip it again (or press Esc) to clo
 
 ## 7. Calendars
 
-Connected events are **read-only** — they're never changed by the planner and don't count toward completion. They refresh every 15 minutes.
+Connected events are **read-only** — they're never changed by the planner and don't count toward completion. While you're using the PC they refresh every 15 minutes; refresh pauses while you're away (screen locked, idle) or the planner is hidden, and catches up as soon as you're back. Holiday calendars refresh once a day. Use **↻ Sync** in Settings to refresh right away.
 
 ![Settings](docs/guide/en-settings.png)
 
