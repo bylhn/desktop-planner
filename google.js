@@ -178,14 +178,21 @@ async function listEvents(account, calId, from, to) {
 }
 const timedEvent = (id, title, s, en) => ({ id, date: dayKey(s), time: hm(s), endTime: en && en > s && dayKey(en) === dayKey(s) ? hm(en) : '', title, allDay: false });
 
-// ev = { date: 'YYYY-MM-DD', time: 'HH:MM' | '', endTime: 'HH:MM' | '', title }
-// No time → all-day event. Time without an end → one hour long. Returns the event in listEvents' shape.
+// ev = { date: 'YYYY-MM-DD', endDate?: 'YYYY-MM-DD', time: 'HH:MM' | '', endTime: 'HH:MM' | '', title }
+// No time → all-day event (spanning date..endDate). Time without an end → one hour long.
+// Returns the created event as listEvents-shaped entries (one per day for a multi-day all-day event).
 async function createEvent(account, calId, ev) {
   const body = { summary: ev.title };
   if (!ev.time) {
-    const s = parseDate(ev.date);
+    const last = parseDate(ev.endDate && ev.endDate > ev.date ? ev.endDate : ev.date);
     body.start = { date: ev.date };
-    body.end = { date: dayKey(new Date(s.getFullYear(), s.getMonth(), s.getDate() + 1)) };
+    body.end = { date: dayKey(new Date(last.getFullYear(), last.getMonth(), last.getDate() + 1)) }; // exclusive
+    const r = await api(account, `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events?fields=id`, { method: 'POST', body });
+    const out = [];
+    for (let d = parseDate(ev.date); d <= last; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) {
+      out.push({ id: r.id, date: dayKey(d), time: '', endTime: '', title: ev.title, allDay: true });
+    }
+    return out;
   } else {
     const [y, m, d] = ev.date.split('-').map(Number);
     const at = (t) => { const [h, mi] = t.split(':').map(Number); return new Date(y, m - 1, d, h, mi); };
@@ -197,8 +204,7 @@ async function createEvent(account, calId, ev) {
     body.end = { dateTime: en.toISOString(), timeZone: tz };
   }
   const r = await api(account, `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events?fields=id`, { method: 'POST', body });
-  if (!ev.time) return { id: r.id, date: ev.date, time: '', endTime: '', title: ev.title, allDay: true };
-  return timedEvent(r.id, ev.title, new Date(body.start.dateTime), new Date(body.end.dateTime));
+  return [timedEvent(r.id, ev.title, new Date(body.start.dateTime), new Date(body.end.dateTime))];
 }
 
 async function deleteEvent(account, calId, eventId) {

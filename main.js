@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen, net } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen, net, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { expandICS } = require('./ics');
@@ -28,8 +28,37 @@ app.setPath('userData', path.join(app.getPath('appData'), 'desktop-planner'));
 
 // PLANNER_DATA lets you point at a separate data file (used for testing without touching real records).
 const dataFile = process.env.PLANNER_DATA || path.join(app.getPath('userData'), 'planner-data.json');
+// Safety net: a dated copy is kept every day in "backups" (last 30 days). If the data file is missing
+// or damaged on start, the newest good backup is loaded instead (the damaged file is kept aside).
+const backupDir = path.join(path.dirname(dataFile), 'backups');
+const KEEP_BACKUPS = 30;
+const hasContent = (d) => d && ((d.todos && Object.keys(d.todos).length) || (d.settings && (d.settings.routines || []).length));
+function readJson(file) { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; } }
+function newestBackup() {
+  try {
+    const files = fs.readdirSync(backupDir).filter((f) => /^planner-data-\d{4}-\d{2}-\d{2}\.json$/.test(f)).sort().reverse();
+    for (const f of files) { const d = readJson(path.join(backupDir, f)); if (hasContent(d)) return d; }
+  } catch { /* no backups yet */ }
+  return null;
+}
 function loadData() {
-  try { return JSON.parse(fs.readFileSync(dataFile, 'utf8')); } catch { return {}; }
+  const exists = fs.existsSync(dataFile);
+  const d = exists ? readJson(dataFile) : null;
+  if (d) return d; // a valid file always wins (even if the user emptied it on purpose)
+  if (exists && !d) { try { fs.copyFileSync(dataFile, dataFile + '.damaged-' + Date.now()); } catch { /* ignore */ } }
+  const b = newestBackup();
+  if (b) { console.warn('data file missing or damaged: restored from backup'); return b; }
+  return d || {};
+}
+function backupToday() {
+  if (process.env.PLANNER_DATA || !hasContent(data)) return;
+  try {
+    fs.mkdirSync(backupDir, { recursive: true });
+    const n = new Date(), p = (x) => String(x).padStart(2, '0');
+    fs.writeFileSync(path.join(backupDir, `planner-data-${n.getFullYear()}-${p(n.getMonth() + 1)}-${p(n.getDate())}.json`), JSON.stringify(data), 'utf8');
+    const old = fs.readdirSync(backupDir).filter((f) => /^planner-data-\d{4}-\d{2}-\d{2}\.json$/.test(f)).sort().reverse().slice(KEEP_BACKUPS);
+    for (const f of old) fs.unlinkSync(path.join(backupDir, f));
+  } catch (e) { console.error('backup failed', e); }
 }
 let data = Object.assign({ todos: {}, settings: {} }, loadData());
 data.settings = Object.assign({ locked: true, opacity: 0.45, dark: false, blur: true, bounds: null }, data.settings);
@@ -48,6 +77,7 @@ function saveNow() {
     fs.renameSync(tmp, dataFile);
   } catch (e) { console.error('save failed', e); }
 }
+app.whenReady().then(() => { backupToday(); setInterval(backupToday, 60 * 60 * 1000); }); // refreshes today's copy hourly
 
 let win = null;
 let tray = null;
@@ -137,6 +167,9 @@ function createWindow() {
   // On quit the window is destroyed while z-order messages are still queued; drop the reference
   // so every later "if (win)" check is safe.
   win.on('closed', () => { win = null; });
+  // Alt+F4 etc. only hides the widget; the app (and tray icon) keeps running until a real quit.
+  win.on('close', (e) => { if (!quitting) { e.preventDefault(); endPeek(); win.hide(); buildTrayMenu(); } });
+  win.on('session-end', () => { quitting = true; saveNow(); }); // Windows sign-out / shutdown must not be blocked
   win.on('restore', () => setTimeout(ensureOnScreen, 200));
   setInterval(ensureOnScreen, 5000);
 
@@ -223,7 +256,8 @@ function setAutoStart(on) {
 const TR = {
   ko: {
     tip: '데스크톱 플래너', hide: '플래너 숨기기', show: '플래너 보이기', unlock: '잠금 해제 (이동/크기 조절)', lock: '위치 잠그기',
-    reset: '위치 초기화', autostart: '윈도우 시작 시 자동 실행', quit: '종료',
+    reset: '위치 초기화', autostart: '윈도우 시작 시 자동 실행', quit: '종료 (아이콘은 여기 남아요)',
+    more: '더 보기', dataFolder: '데이터·백업 폴더 열기', exitApp: '완전히 종료 (트레이 아이콘도 닫기)',
     updInstall: (v) => `🎉 업데이트 설치하고 다시 시작 (v${v})`, updCheck: '업데이트 확인', updDownloading: (v, p) => `업데이트 받는 중… v${v} (${p}%)`,
     errUrl: 'http(s)로 시작하는 주소가 아니에요', errHttp: (s) => `서버 응답 오류 (${s})`, errBig: '파일이 너무 커요',
     errFormat: 'iCal 형식이 아니에요. "iCal/ICS 주소"를 넣어 주세요', errTimeout: '응답이 없어요 (시간 초과)',
@@ -231,7 +265,8 @@ const TR = {
   },
   en: {
     tip: 'Desktop Planner', hide: 'Hide planner', show: 'Show planner', unlock: 'Unlock (move / resize)', lock: 'Lock position',
-    reset: 'Reset position', autostart: 'Start with Windows', quit: 'Quit',
+    reset: 'Reset position', autostart: 'Start with Windows', quit: 'Close (stays in the tray)',
+    more: 'More', dataFolder: 'Open data & backup folder', exitApp: 'Exit completely (remove tray icon)',
     updInstall: (v) => `🎉 Install update and restart (v${v})`, updCheck: 'Check for updates', updDownloading: (v, p) => `Downloading update… v${v} (${p}%)`,
     errUrl: 'The link must start with http(s)', errHttp: (s) => `Server error (${s})`, errBig: 'The file is too large',
     errFormat: 'Not an iCal feed. Paste the calendar\'s iCal/ICS link', errTimeout: 'No response (timed out)',
@@ -263,8 +298,14 @@ function buildTrayMenu() {
     { label: tr('autostart'), type: 'checkbox', checked: login, click: (item) => { setAutoStart(item.checked); buildTrayMenu(); } },
     ...(app.isPackaged ? [{ label: tr('updCheck'), click: () => checkForUpdates() }] : []),
     { type: 'separator' },
-    // app.quit (not app.exit) so a downloaded update gets installed on the way out
-    { label: tr('quit'), click: () => { saveNow(); app.quit(); } },
+    // "Quit" only closes the widget; the tray icon stays so it's one click to bring it back.
+    { label: tr('quit'), click: () => { saveNow(); endPeek(); win.hide(); buildTrayMenu(); } },
+    { label: tr('more'), submenu: [
+      { label: tr('dataFolder'), click: () => shell.openPath(path.dirname(dataFile)) },
+      { type: 'separator' },
+      // app.quit (not app.exit) so a downloaded update gets installed on the way out
+      { label: tr('exitApp'), click: () => { saveNow(); app.quit(); } },
+    ] },
   ]));
 }
 
@@ -475,22 +516,34 @@ ipcMain.handle('google-add-event', async (_e, calId, ev) => {
   if (!google.canWrite(g)) return { ok: false, error: 'scope', payload: calendarPayload() };
   const cal = (g.calendars || []).find((c) => c.id === calId);
   const title = String((ev && ev.title) || '').trim().slice(0, 200);
+  const endDate = ev.endDate && isDay(ev.endDate) && ev.endDate > ev.date ? ev.endDate : '';
   if (!cal || !title || !isDay(ev.date) || !isHM(ev.time) || !isHM(ev.endTime)) return { ok: false, error: 'bad-input', payload: calendarPayload() };
-  try {
-    const created = await google.createEvent(g, cal.id, { date: ev.date, time: ev.time || '', endTime: ev.endTime || '', title });
-    if (!cal.enabled) cal.enabled = true;
-    const key = 'g:' + cal.id;
-    data.calCache = data.calCache || {};
-    if (data.calCache[key]) data.calCache[key].events.push(created);
-    else data.calCache[key] = { events: [created], at: 0 }; // at: 0 → full fetch on the next refresh
-    saveSoon();
-    const payload = calendarPayload();
-    if (win) win.webContents.send('calendar-updated', payload);
-    return { ok: true, payload };
-  } catch (e) {
-    const error = googleWriteError(e);
-    return { ok: false, error, payload: calendarPayload() };
+  // A dragged range: all-day → one event spanning the days; timed → the same event on each day (max 62).
+  const dates = [ev.date];
+  if (endDate && ev.time) {
+    const [y, m, d] = ev.date.split('-').map(Number);
+    for (let i = 1; i < 62; i++) {
+      const x = new Date(y, m - 1, d + i);
+      const k = `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+      if (k > endDate) break;
+      dates.push(k);
+    }
   }
+  const key = 'g:' + cal.id;
+  data.calCache = data.calCache || {};
+  let count = 0, error = null;
+  for (const date of dates) {
+    try {
+      const created = await google.createEvent(g, cal.id, { date, endDate: ev.time ? '' : endDate, time: ev.time || '', endTime: ev.endTime || '', title });
+      if (data.calCache[key]) data.calCache[key].events.push(...created);
+      else data.calCache[key] = { events: created, at: 0 }; // at: 0 → full fetch on the next refresh
+      count = ev.time ? count + 1 : created.length;
+    } catch (e) { error = googleWriteError(e); break; }
+  }
+  if (count) { if (!cal.enabled) cal.enabled = true; saveSoon(); }
+  const payload = calendarPayload();
+  if (count && win) win.webContents.send('calendar-updated', payload);
+  return error ? { ok: false, error, count, payload } : { ok: true, count, payload };
 });
 ipcMain.handle('google-delete-event', async (_e, cal, eventId) => {
   const g = data.google;
@@ -582,5 +635,6 @@ ipcMain.on('save-settings', (_e, s) => {
 });
 ipcMain.on('pin', () => pinBottom());
 
-app.on('before-quit', saveNow);
+let quitting = false;
+app.on('before-quit', () => { quitting = true; saveNow(); });
 app.on('window-all-closed', () => {});

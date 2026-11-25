@@ -187,7 +187,12 @@
   .mp-head .txtbtn { padding: 2px 8px; border-radius: 7px; font-size: 11.5px; color: var(--ink-soft); background: var(--chip); }
   .mp-head .txtbtn:hover { color: var(--accent); }
   .mpanel .empty { padding: 4px 6px; }
-  .mhint { flex: none; text-align: center; margin-top: 4px; }
+  .cell.mdrag { background: rgba(var(--accent-rgb), 0.18); }
+  .grid { user-select: none; }
+  .mp-tl { display: flex; align-items: center; gap: 8px; }
+  .mptog { font-size: 11px; padding: 1px 8px; border-radius: 9px; background: var(--chip); color: var(--ink-soft); }
+  .mptog:hover, .mptog.on { color: var(--accent); }
+  .mptog.on { background: rgba(var(--accent-rgb), 0.14); }
   .mp-sub { font-size: 11.5px; color: var(--ink-soft); margin: 6px 6px 2px; }
 
   /* ---------- popover ---------- */
@@ -396,9 +401,8 @@
   <section class="month" id="monthView" hidden>
     <div class="dow" id="dowRow"></div>
     <div class="grid" id="grid"></div>
-    <div class="hint mhint" id="mHint" data-i18n="monthHint"></div>
     <div class="mpanel" id="mPanel">
-      <div class="mp-head"><b id="mpTitle"></b><button class="txtbtn" id="mpOpenDay" data-i18n="openDay"></button></div>
+      <div class="mp-head"><span class="mp-tl"><b id="mpTitle"></b><button class="mptog" id="mpTodoTog"></button></span><button class="txtbtn" id="mpOpenDay" data-i18n="openDay"></button></div>
       <div id="mpList"></div>
       <div id="mpTodos"></div>
       <div id="mpAdd"></div>
@@ -448,13 +452,14 @@ const STR = {
       ['🔁', '고정 루틴', '"고정 루틴" 옆 <b style="display:inline">편집</b>을 눌러 매일(또는 정한 요일마다) 반복할 일을 추가하세요. 날마다 새로 체크해요.'],
       ['✅', '오늘의 할 일', '그날만 할 일을 쓰고 Enter. <code>14:00 회의 준비</code>처럼 시간을 앞에 쓰면 시간순으로 정렬돼요. 더블클릭하면 수정돼요.'],
       ['📅', '캘린더 연동', '⚙ 설정에서 <b style="display:inline">Google로 로그인</b>하거나 iCal 주소를 넣으면 일정이 함께 보여요. <b style="display:inline">달력</b> 화면에서 날짜를 누르고 <code>14:00 회의</code>처럼 쓰면 구글 캘린더(폰)에도 등록돼요.'],
-      ['🗓️', '달력 화면', '맨 위 <b style="display:inline">달력</b>에서 날짜를 <b style="display:inline">한 번</b> 누르면 그날 일정과 할 일이 아래에 나와서 스크롤해 볼 수 있어요. 같은 날짜를 다시 누르면 닫히고, <b style="display:inline">두 번</b> 누르면 그날 하루 화면으로 넘어가요.'],
+      ['🗓️', '달력 화면', '맨 위 <b style="display:inline">달력</b>에서 날짜를 <b style="display:inline">한 번</b> 누르면 그날 일정이 아래에 나와서 스크롤해 볼 수 있고, 날짜 옆 <b style="display:inline">할 일</b> 버튼으로 그날 할 일도 펼쳐 볼 수 있어요. 같은 날짜를 다시 누르면 닫히고, <b style="display:inline">두 번</b> 누르면 하루 화면으로 가요. 여러 날짜를 <b style="display:inline">끌어서</b> 고르면 일정을 한 번에 등록해요.'],
       ['📊', '대시보드', '오른쪽 아래 토글을 켜면 연속 완수 일수, 30일 달성률 그래프, 루틴별 달성률을 볼 수 있어요.'],
       ['⚙️', '트레이 메뉴', '작업표시줄 오른쪽(시계 옆) 보라색 아이콘을 우클릭하면 숨기기, 위치 초기화, 윈도우 시작 시 자동 실행, 종료가 있어요. 안 보이면 시계 옆 <code>^</code>를 눌러 보세요.'],
     ],
     gTitle: 'Google 캘린더', gLogin: 'Google로 로그인', gLoginHint: '브라우저에서 로그인하고 허용을 누르면 연결돼요. 일정은 15분마다 새로 받아오고, 달력 화면에서 일정을 등록할 수 있어요.',
-    openDay: '하루 보기 →', mpTodos: '이 날의 할 일',
-    monthHint: '날짜를 한 번 누르면 그날 일정·할 일이 아래에 나오고(다시 누르면 닫혀요), 두 번 누르면 하루 화면으로 가요.', mpDate: (d, w) => `${d.getMonth() + 1}월 ${d.getDate()}일 (${w})`, mpEmpty: '이 날은 캘린더 일정이 없어요.',
+    openDay: '하루 보기 →', mpTodos: '할 일', mpNoTodos: '이 날은 할 일이 없어요.',
+    mpRange: (a, b, n) => `${a} ~ ${b} (${n}일)`, mpEmptyRange: '이 기간에는 캘린더 일정이 없어요.',
+    evAddedN: (c, n) => `구글 캘린더(${c})에 ${n}일 동안 등록했어요. 폰에도 곧 떠요.`, mpDate: (d, w) => `${d.getMonth() + 1}월 ${d.getDate()}일 (${w})`, mpEmpty: '이 날은 캘린더 일정이 없어요.',
     evPh: '일정 추가 (예: 14:00 회의, 14:00-15:30 스터디)', evAdd: '등록', evAdding: '등록 중…', evAdded: (c) => `구글 캘린더(${c})에 등록했어요. 폰에도 곧 떠요.`,
     evNeedLogin: 'Google로 로그인하면 여기서 일정을 등록하고, 폰에서 등록한 일정도 볼 수 있어요.',
     evNeedScope: '일정을 등록하려면 Google 권한을 한 번 더 허용해야 해요.', evRelogin: 'Google 다시 로그인 (일정 등록 허용)',
@@ -504,13 +509,14 @@ const STR = {
       ['🔁', 'Fixed routines', 'Click <b style="display:inline">Edit</b> next to "Fixed routines" to add things you repeat every day (or on chosen weekdays). They reset each day.'],
       ['✅', "Today's to-dos", 'Type a one-off task and press Enter. Start with a time like <code>14:00 Prep</code> or <code>2pm Prep</code> to sort by time. Double-click to edit.'],
       ['📅', 'Calendars', 'In ⚙ Settings, <b style="display:inline">Sign in with Google</b> or add an iCal link to see your events here. In <b style="display:inline">Month</b> view, click a date and type <code>14:00 Meeting</code> to add it to Google Calendar (and your phone).'],
-      ['🗓️', 'Month view', 'In <b style="display:inline">Month</b>, click a date <b style="display:inline">once</b> to see that day\'s events and to-dos below (scrollable); click it again to close. <b style="display:inline">Double-click</b> to jump to that day.'],
+      ['🗓️', 'Month view', 'In <b style="display:inline">Month</b>, click a date <b style="display:inline">once</b> to see that day\'s events below (scrollable) and use the <b style="display:inline">To-dos</b> button next to the date to show its to-dos; click it again to close. <b style="display:inline">Double-click</b> to jump to that day, or <b style="display:inline">drag</b> across dates to add an event to all of them.'],
       ['📊', 'Dashboard', 'Flip the toggle at the bottom-right for streaks, a 30-day completion chart and per-routine rates.'],
       ['⚙️', 'Tray menu', 'Right-click the purple tray icon (next to the clock) to hide, reset position, start with Windows, or quit. Not there? Click the <code>^</code> next to the clock.'],
     ],
     gTitle: 'Google Calendar', gLogin: 'Sign in with Google', gLoginHint: 'Sign in and allow access in your browser. Events refresh every 15 minutes, and you can add events from the Month view.',
-    openDay: 'Open day →', mpTodos: 'To-dos',
-    monthHint: 'Click a date to see its events and to-dos below (click again to close). Double-click to open that day.', mpDate: (d, w) => `${w}, ${MON_EN[d.getMonth()]} ${d.getDate()}`, mpEmpty: 'No calendar events on this day.',
+    openDay: 'Open day →', mpTodos: 'To-dos', mpNoTodos: 'No to-dos on this day.',
+    mpRange: (a, b, n) => `${a} – ${b} (${n} days)`, mpEmptyRange: 'No calendar events in this range.',
+    evAddedN: (c, n) => `Added to Google Calendar (${c}) for ${n} days. It'll show on your phone too.`, mpDate: (d, w) => `${w}, ${MON_EN[d.getMonth()]} ${d.getDate()}`, mpEmpty: 'No calendar events on this day.',
     evPh: 'Add event (e.g. 14:00 Meeting, 14:00-15:30 Study)', evAdd: 'Add', evAdding: 'Adding…', evAdded: (c) => `Added to Google Calendar (${c}). It'll show on your phone too.`,
     evNeedLogin: 'Sign in with Google to add events here and see events you add on your phone.',
     evNeedScope: 'To add events, allow Google access once more.', evRelogin: 'Sign in again (allow adding events)',
@@ -906,31 +912,63 @@ function renderMonth() {
       cell.appendChild(el);
     });
     if (lines.length > 3) { const more = document.createElement('div'); more.className = 'more'; more.textContent = t('more', lines.length - 3); cell.appendChild(more); }
-    if (k === mSel) cell.classList.add('msel');
-    cell.onclick = () => { mSel = mSel === k ? null : k; $('mpMsg').textContent = ''; renderMonth(); }; // click again to close
+    cell.dataset.k = k;
+    if (mSel && k >= mSel && k <= (mSelEnd || mSel)) cell.classList.add('msel');
+    // click = open/close that date; drag across dates = pick a range to add one event to all of them
+    cell.onmousedown = (e) => { if (e.button !== 0) return; e.preventDefault(); drag = { from: k, to: k }; paintDrag(); };
+    cell.onmouseenter = () => { if (drag && drag.to !== k) { drag.to = k; paintDrag(); } };
     cell.ondblclick = () => openDay(k);
     grid.appendChild(cell);
   }
   renderMonthPanel();
 }
+let drag = null; // { from, to } while the mouse button is held on the month grid
+const dragRange = () => drag.from <= drag.to ? [drag.from, drag.to] : [drag.to, drag.from];
+function paintDrag() {
+  const [a, b] = dragRange();
+  $('grid').querySelectorAll('.cell').forEach((c) => c.classList.toggle('mdrag', c.dataset.k >= a && c.dataset.k <= b && a !== b));
+}
+document.addEventListener('mouseup', () => {
+  if (!drag) return;
+  const [a, b] = dragRange();
+  drag = null;
+  if (a === b) { // plain click: toggle that date
+    const same = mSel === a && !mSelEnd;
+    mSel = same ? null : a; mSelEnd = null;
+  } else { mSel = a; mSelEnd = b; }
+  $('mpMsg').textContent = '';
+  renderMonth();
+  if (mSel && $('mpInput')) $('mpInput').focus();
+});
 function openDay(k) { const d = parseKey(k); selected = k; miniMonth = new Date(d.getFullYear(), d.getMonth(), 1); setView('day'); }
 
 /* Month view panel: the picked date's calendar events + add to Google Calendar. */
-let mSel = null, mpBusy = false, mpCal = ''; // null = panel closed until a date is clicked
+let mSel = null, mSelEnd = null, mpBusy = false, mpCal = '', mpShowTodos = false; // mSel null = panel closed; mSelEnd = last day of a dragged range
+const rangeDays = () => { const out = []; for (let k = mSel; k <= (mSelEnd || mSel); k = addDays(k, 1)) out.push(k); return out; };
 const writableCals = () => (gInfo.calendars || []).filter((c) => c.writable !== false && !/#holiday@/.test(c.id));
 function renderMonthPanel() {
   $('mPanel').hidden = !mSel;
-  $('mHint').hidden = !!mSel;
   if (!mSel) return;
   const d = parseKey(mSel);
-  $('mpTitle').textContent = t('mpDate', d, DOW[d.getDay()]);
+  const days = rangeDays(), multi = days.length > 1;
+  const dLabel = (k) => { const x = parseKey(k); return t('mpDate', x, DOW[x.getDay()]); };
+  $('mpTitle').textContent = multi ? t('mpRange', dLabel(mSel), dLabel(mSelEnd), days.length) : t('mpDate', d, DOW[d.getDay()]);
+  $('mpOpenDay').hidden = multi;
   $('mpOpenDay').onclick = () => openDay(mSel);
   const canDel = gInfo.connected && gInfo.canWrite;
-  const evs = eventsOn(mSel);
+  // a multi-day all-day event appears on each day; list it once
+  const seen = new Set();
+  const evs = days.flatMap((k) => eventsOn(k).map((e) => ({ ...e, day: k }))).filter((e) => {
+    const key = e.id ? e.cal + e.id : null;
+    if (!key) return true;
+    if (seen.has(key)) return false;
+    seen.add(key); return true;
+  });
   $('mpList').innerHTML = evs.length ? evs.map((e, i) => {
     const del = canDel && e.id && String(e.cal).startsWith('g:') && writableCals().some((c) => 'g:' + c.id === e.cal);
-    return `<div class="ev"><i class="cb" style="background:${calColor(e.cal)}"></i><span class="et">${evTime(e)}</span><span class="en">${esc(e.title)}</span>${del ? `<button class="x" data-i="${i}" title="${t('del')}">✕</button>` : ''}</div>`;
-  }).join('') : `<div class="empty">${t('mpEmpty')}</div>`;
+    const when = multi ? `${parseKey(e.day).getMonth() + 1}/${parseKey(e.day).getDate()} ${evTime(e)}` : evTime(e);
+    return `<div class="ev"><i class="cb" style="background:${calColor(e.cal)}"></i><span class="et">${when}</span><span class="en">${esc(e.title)}</span>${del ? `<button class="x" data-i="${i}" title="${t('del')}">✕</button>` : ''}</div>`;
+  }).join('') : `<div class="empty">${t(multi ? 'mpEmptyRange' : 'mpEmpty')}</div>`;
   $('mpList').querySelectorAll('[data-i]').forEach((b) => b.onclick = async () => {
     const e = evs[+b.dataset.i];
     if (!confirm(t('evDelAsk', e.title))) return;
@@ -940,10 +978,16 @@ function renderMonthPanel() {
     render();
   });
 
-  // that day's to-dos (hidden from the grid; check them here or in the day view)
-  const tds = (todos[mSel] || []).slice().sort(byTime);
-  $('mpTodos').innerHTML = tds.length ? `<div class="mp-sub">${t('mpTodos')}</div>` + tds.map((it) => `<div class="item${it.done ? ' done' : ''}" data-tid="${it.id}">
-      <span class="check" data-act="toggle">${CHECK}</span>${it.time ? `<span class="time">${it.time}</span>` : ''}<span class="txt">${esc(it.text)}</span></div>`).join('') : '';
+  // that day's planner (to-dos) sits behind a small toggle next to the date
+  const tds = multi ? [] : (todos[mSel] || []).slice().sort(byTime);
+  const tog = $('mpTodoTog');
+  tog.hidden = multi;
+  tog.classList.toggle('on', mpShowTodos);
+  tog.textContent = `${t('mpTodos')} ${tds.filter((x) => x.done).length}/${tds.length} ${mpShowTodos ? '▴' : '▾'}`;
+  tog.onclick = () => { mpShowTodos = !mpShowTodos; renderMonthPanel(); };
+  $('mpTodos').hidden = !mpShowTodos || multi;
+  $('mpTodos').innerHTML = tds.length ? tds.map((it) => `<div class="item${it.done ? ' done' : ''}" data-tid="${it.id}">
+      <span class="check" data-act="toggle">${CHECK}</span>${it.time ? `<span class="time">${it.time}</span>` : ''}<span class="txt">${esc(it.text)}</span></div>`).join('') : `<div class="empty">${t('mpNoTodos')}</div>`;
   $('mpTodos').querySelectorAll('[data-tid]').forEach((row) => row.querySelector('[data-act=toggle]').onclick = () => {
     const it = (todos[mSel] || []).find((x) => x.id === row.dataset.tid);
     if (it) { it.done = !it.done; persist(); render(); }
@@ -975,9 +1019,11 @@ function renderMonthPanel() {
     const ev = splitEvent(v);
     mpBusy = true; $('mpMsg').textContent = ''; renderMonthPanel();
     let r;
-    try { r = await window.planner.googleAddEvent(mpCal, { date: mSel, ...ev }); } finally { mpBusy = false; }
+    // range + no time → one all-day event spanning the days; range + time → the same event on each day
+    try { r = await window.planner.googleAddEvent(mpCal, { date: mSel, endDate: mSelEnd || '', ...ev }); } finally { mpBusy = false; }
     setCalendar(r.payload);
-    if (r.ok) { $('mpInput').value = ''; $('mpMsg').textContent = t('evAdded', (cals.find((c) => c.id === mpCal) || {}).name || ''); }
+    const calName = (cals.find((c) => c.id === mpCal) || {}).name || '';
+    if (r.ok) { $('mpInput').value = ''; $('mpMsg').textContent = r.count > 1 ? t('evAddedN', calName, r.count) : t('evAdded', calName); }
     else $('mpMsg').textContent = t('evFail', evErr(r.error));
     render();
     $('mpInput') && $('mpInput').focus();
@@ -1091,7 +1137,7 @@ function render() {
   applySettings();
 }
 function setView(v) {
-  if (v === 'month' && view !== 'month') { mSel = null;const d = parseKey(selected); bigMonth = new Date(d.getFullYear(), d.getMonth(), 1); $('mpMsg').textContent = ''; }
+  if (v === 'month' && view !== 'month') { mSel = null; mSelEnd = null; const d = parseKey(selected); bigMonth = new Date(d.getFullYear(), d.getMonth(), 1); $('mpMsg').textContent = ''; }
   view = v;
   if (v !== 'day') closeDash();
   $('vDay').classList.toggle('on', v === 'day');
