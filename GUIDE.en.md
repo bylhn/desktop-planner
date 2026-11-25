@@ -71,7 +71,7 @@ One-off tasks for a given day. Type in the box at the bottom and press **Enter**
 ![Month view](docs/guide/en-month.png)
 
 - Click **Month** at the top for a full month: each day shows its completion % and calendar events. Click a date to see its to-dos below.
-- Click a date **once** to see its calendar events below and **add an event** right there (see section 7).
+- Click a date **once** to see its calendar events and to-dos below (click it again to close) and **add an event** right there (see section 7).
 - **Double-click** a date or click **Open day →** to open that day. You can still check or edit past days.
 - In the day view, the mini calendar is **shaded by completion**, with a white dot on perfect days.
 

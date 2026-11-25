@@ -901,7 +901,7 @@ function renderMonth() {
     });
     if (lines.length > 3) { const more = document.createElement('div'); more.className = 'more'; more.textContent = t('more', lines.length - 3); cell.appendChild(more); }
     if (k === mSel) cell.classList.add('msel');
-    cell.onclick = () => { if (mSel === k) return; mSel = k; renderMonth(); };
+    cell.onclick = () => { mSel = mSel === k ? null : k; $('mpMsg').textContent = ''; renderMonth(); }; // click again to close
     cell.ondblclick = () => openDay(k);
     grid.appendChild(cell);
   }
@@ -910,9 +910,11 @@ function renderMonth() {
 function openDay(k) { const d = parseKey(k); selected = k; miniMonth = new Date(d.getFullYear(), d.getMonth(), 1); setView('day'); }
 
 /* Month view panel: the picked date's calendar events + add to Google Calendar. */
-let mSel = today, mpBusy = false, mpCal = '';
+let mSel = null, mpBusy = false, mpCal = ''; // null = panel closed until a date is clicked
 const writableCals = () => (gInfo.calendars || []).filter((c) => c.writable !== false && !/#holiday@/.test(c.id));
 function renderMonthPanel() {
+  $('mPanel').hidden = !mSel;
+  if (!mSel) return;
   const d = parseKey(mSel);
   $('mpTitle').textContent = t('mpDate', d, DOW[d.getDay()]);
   $('mpOpenDay').onclick = () => openDay(mSel);
@@ -1082,7 +1084,7 @@ function render() {
   applySettings();
 }
 function setView(v) {
-  if (v === 'month' && view !== 'month') { mSel = selected; const d = parseKey(selected); bigMonth = new Date(d.getFullYear(), d.getMonth(), 1); $('mpMsg').textContent = ''; }
+  if (v === 'month' && view !== 'month') { mSel = null;const d = parseKey(selected); bigMonth = new Date(d.getFullYear(), d.getMonth(), 1); $('mpMsg').textContent = ''; }
   view = v;
   if (v !== 'day') closeDash();
   $('vDay').classList.toggle('on', v === 'day');
@@ -1129,7 +1131,7 @@ $('next').onclick = () => {
 };
 $('mPrev').onclick = () => { miniMonth = new Date(miniMonth.getFullYear(), miniMonth.getMonth() - 1, 1); renderSide(); };
 $('mNext').onclick = () => { miniMonth = new Date(miniMonth.getFullYear(), miniMonth.getMonth() + 1, 1); renderSide(); };
-$('goToday').onclick = () => { selected = today; mSel = today; miniMonth = new Date(); bigMonth = new Date(); render(); };
+$('goToday').onclick = () => { selected = today;miniMonth = new Date(); bigMonth = new Date(); render(); };
 $('vDay').onclick = () => setView('day');
 $('vMonth').onclick = () => setView('month');
 $('dashClose').onclick = closeDash;
