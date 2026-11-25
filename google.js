@@ -109,9 +109,18 @@ function primeAccess(token, expires) { accessCache = token ? { token, expires } 
 async function api(account, url) {
   const res = await net.fetch(url, { headers: { Authorization: `Bearer ${await accessToken(account)}` }, signal: AbortSignal.timeout(20000) });
   const body = await res.json().catch(() => ({}));
-  if (!res.ok) { const e = new Error((body.error && body.error.message) || `HTTP ${res.status}`); e.code = res.status; throw e; }
+  if (!res.ok) {
+    const e = new Error((body.error && body.error.message) || `HTTP ${res.status}`);
+    e.code = res.status;
+    e.reason = body.error && body.error.errors && body.error.errors[0] && body.error.errors[0].reason;
+    e.rateLimited = res.status === 429 || (res.status === 403 && /rateLimit|quota|userRateLimit/i.test(e.reason || ''));
+    throw e;
+  }
+  apiCalls++;
   return body;
 }
+let apiCalls = 0; // successful Calendar API requests in this session (for diagnostics)
+const callCount = () => apiCalls;
 
 async function listCalendars(account) {
   const items = [];
@@ -166,4 +175,4 @@ async function revoke(account) {
   try { await postForm('https://oauth2.googleapis.com/revoke', { token: refresh }); } catch { /* already revoked */ }
 }
 
-module.exports = { loadClient, signIn, listCalendars, listEvents, revoke, primeAccess };
+module.exports = { loadClient, signIn, listCalendars, listEvents, revoke, primeAccess, callCount };

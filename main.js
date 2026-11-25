@@ -262,22 +262,44 @@ function calendarPayload() {
   return { events, status: calStatus, meta, google: googleInfo() };
 }
 
-async function refreshGoogle(from, to) {
+// ---- Keep Calendar API usage low so the free quota scales to many users ----
+// * events: re-fetched only when older than EVENTS_TTL (holiday calendars: once a day)
+// * calendar list: re-fetched at most every LIST_TTL (or on manual sync / sign-in)
+// * automatic refreshes are skipped while the user is away (idle / locked) or the planner is hidden
+// * rate-limit / quota errors back off exponentially instead of retrying every cycle
+const MIN = 60 * 1000;
+const EVENTS_TTL = 15 * MIN, HOLIDAY_TTL = 24 * 60 * MIN, LIST_TTL = 6 * 60 * MIN, ICS_TTL = 15 * MIN;
+let googleBackoff = { until: 0, step: 0 };
+const isHoliday = (id) => /#holiday@group\.v\.calendar\.google\.com$/.test(id);
+const fresh = (entry, ttl) => entry && entry.at && Date.now() - entry.at < ttl;
+
+async function refreshGoogle(from, to, force) {
   const g = data.google;
   if (!g || !g.refresh) return;
+  if (!force && Date.now() < googleBackoff.until) return;
   try {
-    const list = await google.listCalendars(g);
-    const prev = new Map((g.calendars || []).map((c) => [c.id, c.enabled]));
-    // first sync: show the calendars that are checked in Google Calendar itself
-    g.calendars = list.map((c) => ({ id: c.id, name: c.name, color: c.color, enabled: prev.has(c.id) ? prev.get(c.id) : (c.selected || c.primary) }));
+    if (force || !g.listAt || Date.now() - g.listAt > LIST_TTL || !(g.calendars || []).length) {
+      const list = await google.listCalendars(g);
+      const prev = new Map((g.calendars || []).map((c) => [c.id, c.enabled]));
+      // first sync: show the calendars that are checked in Google Calendar itself
+      g.calendars = list.map((c) => ({ id: c.id, name: c.name, color: c.color, enabled: prev.has(c.id) ? prev.get(c.id) : (c.selected || c.primary) }));
+      g.listAt = Date.now();
+    }
     await Promise.all(g.calendars.filter((c) => c.enabled).map(async (c) => {
-      data.calCache['g:' + c.id] = { events: await google.listEvents(g, c.id, from, to), at: Date.now() };
+      const key = 'g:' + c.id;
+      if (!force && fresh(data.calCache[key], isHoliday(c.id) ? HOLIDAY_TTL : EVENTS_TTL)) return;
+      data.calCache[key] = { events: await google.listEvents(g, c.id, from, to), at: Date.now() };
     }));
     googleError = null;
+    googleBackoff = { until: 0, step: 0 };
   } catch (e) {
-    if (e.code === 'invalid_grant') { // revoked in Google account settings, or expired (test-mode apps expire weekly)
+    if (e.code === 'invalid_grant') { // revoked in Google account settings, or unused for a long time
       g.refresh = null;
       googleError = 'expired';
+    } else if (e.rateLimited) {
+      googleBackoff.step = Math.min(googleBackoff.step + 1, 6); // 5, 10, 20, 40, 80, 120 min
+      googleBackoff.until = Date.now() + Math.min(5 * MIN * 2 ** (googleBackoff.step - 1), 120 * MIN);
+      googleError = null; // keep showing cached events quietly
     } else googleError = e.name === 'TimeoutError' ? tr('errTimeout') : e.message;
   }
 }
@@ -293,7 +315,8 @@ async function fetchFeed(c, from, to) {
   return expandICS(text, from, to);
 }
 
-function refreshCalendars() {
+function refreshCalendars(opts = {}) {
+  const force = !!opts.force;
   if (calRefreshing) return calRefreshing;
   calRefreshing = (async () => {
     const cals = (data.settings.calendars || []).filter((c) => c.enabled !== false && c.url);
@@ -306,8 +329,9 @@ function refreshCalendars() {
     if (data.google && data.google.refresh) for (const c of data.google.calendars || []) if (c.enabled) ids.add('g:' + c.id);
     for (const id of Object.keys(data.calCache)) if (!ids.has(id)) delete data.calCache[id];
     for (const id of Object.keys(calStatus)) if (!ids.has(id)) delete calStatus[id];
-    const googleJob = refreshGoogle(from, to);
+    const googleJob = refreshGoogle(from, to, force);
     await Promise.all(cals.map(async (c) => {
+      if (!force && fresh(data.calCache[c.id], ICS_TTL) && calStatus[c.id] && calStatus[c.id].ok) return;
       try {
         const events = await fetchFeed(c, from, to);
         data.calCache[c.id] = { events, at: Date.now() };
@@ -317,6 +341,7 @@ function refreshCalendars() {
       }
     }));
     await googleJob;
+    if (process.env.PLANNER_DEBUG) console.log(`[calendar] refresh force=${force} googleApiCalls=${google.callCount()}`);
     saveSoon();
     const payload = calendarPayload();
     if (win) win.webContents.send('calendar-updated', payload);
@@ -325,12 +350,23 @@ function refreshCalendars() {
   return calRefreshing;
 }
 
+// Automatic refresh: on start, every ~15 min (with jitter so users don't all hit Google at once),
+// and when the user comes back to the PC. Skipped while the user is away or the planner is hidden.
+function autoRefresh() {
+  const { powerMonitor } = require('electron');
+  const away = powerMonitor.getSystemIdleState(10 * 60) !== 'active';
+  if (away || (win && !win.isVisible())) return;
+  refreshCalendars();
+}
 app.whenReady().then(() => {
-  setTimeout(refreshCalendars, 3000);
-  setInterval(refreshCalendars, 15 * 60 * 1000);
+  const { powerMonitor } = require('electron');
+  setTimeout(() => refreshCalendars(), 3000); // startup: uses cache if it's still fresh
+  const tick = () => { autoRefresh(); setTimeout(tick, 15 * MIN + Math.floor(Math.random() * 2 * MIN)); };
+  setTimeout(tick, 15 * MIN + Math.floor(Math.random() * 2 * MIN));
+  for (const ev of ['resume', 'unlock-screen', 'user-did-become-active']) powerMonitor.on(ev, () => setTimeout(() => refreshCalendars(), 5000));
 });
 ipcMain.handle('calendar-get', () => calendarPayload());
-ipcMain.handle('calendar-refresh', () => refreshCalendars());
+ipcMain.handle('calendar-refresh', () => refreshCalendars({ force: true }));
 
 async function googleLogin(opts) {
   try {
@@ -342,7 +378,7 @@ async function googleLogin(opts) {
   } catch (e) {
     googleError = e.code === 'no-client' ? 'no-client' : e.message === 'timeout' ? 'timeout' : e.message;
   }
-  return refreshCalendars();
+  return refreshCalendars({ force: true });
 }
 ipcMain.handle('google-login', () => googleLogin());
 // Helper sign-in: PLANNER_AUTH_URL_FILE=<path> starts a sign-in on launch and writes the Google URL
