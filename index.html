@@ -995,6 +995,7 @@ function renderMonthPanel() {
     if (r.payload) setCalendar(r.payload);
     $('mpMsg').textContent = r.ok ? t('evDeleted') : t('evFail', evErr(r.error));
     render();
+    if ($('mpInput')) $('mpInput').focus(); // keep typing right after a delete
   });
 
   // that day's planner (to-dos) sits behind a small toggle next to the date
