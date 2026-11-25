@@ -256,7 +256,7 @@ function setAutoStart(on) {
 const TR = {
   ko: {
     tip: '데스크톱 플래너', hide: '플래너 숨기기', show: '플래너 보이기', unlock: '잠금 해제 (이동/크기 조절)', lock: '위치 잠그기',
-    reset: '위치 초기화', autostart: '윈도우 시작 시 자동 실행', quit: '종료 (아이콘은 여기 남아요)',
+    reset: '위치 초기화', autostart: '윈도우 시작 시 자동 실행', quit: '종료',
     more: '더 보기', dataFolder: '데이터·백업 폴더 열기', exitApp: '완전히 종료 (트레이 아이콘도 닫기)',
     updInstall: (v) => `🎉 업데이트 설치하고 다시 시작 (v${v})`, updCheck: '업데이트 확인', updDownloading: (v, p) => `업데이트 받는 중… v${v} (${p}%)`,
     errUrl: 'http(s)로 시작하는 주소가 아니에요', errHttp: (s) => `서버 응답 오류 (${s})`, errBig: '파일이 너무 커요',
@@ -265,7 +265,7 @@ const TR = {
   },
   en: {
     tip: 'Desktop Planner', hide: 'Hide planner', show: 'Show planner', unlock: 'Unlock (move / resize)', lock: 'Lock position',
-    reset: 'Reset position', autostart: 'Start with Windows', quit: 'Close (stays in the tray)',
+    reset: 'Reset position', autostart: 'Start with Windows', quit: 'Close',
     more: 'More', dataFolder: 'Open data & backup folder', exitApp: 'Exit completely (remove tray icon)',
     updInstall: (v) => `🎉 Install update and restart (v${v})`, updCheck: 'Check for updates', updDownloading: (v, p) => `Downloading update… v${v} (${p}%)`,
     errUrl: 'The link must start with http(s)', errHttp: (s) => `Server error (${s})`, errBig: 'The file is too large',
