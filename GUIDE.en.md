@@ -71,7 +71,7 @@ One-off tasks for a given day. Type in the box at the bottom and press **Enter**
 ![Month view](docs/guide/en-month.png)
 
 - Click **Month** at the top for a full month: each day shows its completion % and calendar events. Click a date to see its to-dos below.
-- Date cells show calendar events only. Click a date **once** to open a **scrollable panel** below with that day's events, where you can **add an event** (see section 7). Click the same date **again to close** it.
+- Date cells show calendar events only. Click a date **once** to open a **scrollable panel** below with that day's events, where you can **add an event** (see section 7). Click the same date **again**, or any empty spot (e.g. next to **Today** at the top), **to close** it and see the whole month.
 - Click the small **To-dos ▾** button next to the date to show (and check off) that day's to-dos.
 - **Drag** across several dates to add an event to the whole range: without a time it becomes one all-day event spanning the days; with a time (`09:00 Gym`) the same event is added on each day.
 - **Double-click** a date or click **Open day →** to open that day. You can still check or edit past days.

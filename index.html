@@ -931,6 +931,14 @@ function renderMonth() {
   }
   renderMonthPanel();
 }
+// Month view: clicking any empty spot (top bar next to "Today", weekday row, gaps) closes the date
+// panel so the whole month is visible again. Dates, the panel itself and controls keep working.
+document.addEventListener('click', (e) => {
+  if (view !== 'month' || !mSel || drag) return;
+  if (e.target.closest('.cell, #mPanel, button, input, select, a, .pop, .dash, .modal, label')) return;
+  mSel = null; mSelEnd = null; $('mpMsg').textContent = '';
+  renderMonth();
+});
 let drag = null; // { from, to } while the mouse button is held on the month grid
 const dragRange = () => drag.from <= drag.to ? [drag.from, drag.to] : [drag.to, drag.from];
 function paintDrag() {
