@@ -32,7 +32,7 @@ Check off fixed daily routines and each day's to-dos, and look back on your prog
 
 ## Install
 
-1. Click **Download for Windows** above (or open the [latest release](https://github.com/bylhn/desktop-planner/releases/latest)) and run `DesktopPlanner-Setup-x.y.z.exe`.
+1. **[Click here to download the installer](https://github.com/bylhn/desktop-planner/releases/latest/download/DesktopPlanner-Setup.exe)** (always the latest version) and run `DesktopPlanner-Setup.exe`.
 2. This is a personal project without a code-signing certificate, so Windows may show a "Windows protected your PC" warning. Click **More info → Run anyway**.
 3. When setup finishes, the planner appears on your desktop. Right-click its purple tray icon (next to the clock) for start-with-Windows, reset position, and quit. Can't see it? Click the **^** next to the clock.
 
