@@ -60,7 +60,7 @@ function hwndOf(w) {
 }
 let peeking = false; // true while the planner is brought in front (desktop icon / tray click)
 function pinBottom() {
-  if (!win || !SetWindowPos || pinning || peeking) return;
+  if (!win || win.isDestroyed() || !SetWindowPos || pinning || peeking) return; // destroyed: app is quitting
   pinning = true;
   try { SetWindowPos(hwndOf(win), HWND_BOTTOM, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE); }
   finally { pinning = false; }
@@ -133,7 +133,10 @@ function createWindow() {
   win.on('focus', () => setImmediate(pinBottom));
 
   // "Show desktop" (Win+D) minimizes normal windows; bring the widget back onto the desktop.
-  win.on('minimize', () => setTimeout(() => { win.restore(); ensureOnScreen(); pinBottom(); }, 150));
+  win.on('minimize', () => setTimeout(() => { if (!win || win.isDestroyed()) return; win.restore(); ensureOnScreen(); pinBottom(); }, 150));
+  // On quit the window is destroyed while z-order messages are still queued; drop the reference
+  // so every later "if (win)" check is safe.
+  win.on('closed', () => { win = null; });
   win.on('restore', () => setTimeout(ensureOnScreen, 200));
   setInterval(ensureOnScreen, 5000);
 
@@ -176,7 +179,7 @@ function bringToFront() {
   buildTrayMenu();
 }
 function endPeek() {
-  if (!peeking || !win) return;
+  if (!peeking || !win || win.isDestroyed()) return;
   peeking = false;
   win.setAlwaysOnTop(false);
   pinBottom();
