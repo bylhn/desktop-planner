@@ -1,7 +1,7 @@
 {
   "name": "desktop-planner",
   "productName": "Desktop Planner",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "author": "bylhn",
   "homepage": "https://github.com/bylhn/desktop-planner",
   "description": "바탕화면에 고정되는 투명 스터디 플래너 위젯 (고정 루틴 · 오늘의 할 일 · 달성 기록 대시보드)",
