@@ -187,6 +187,7 @@
   .mp-head .txtbtn { padding: 2px 8px; border-radius: 7px; font-size: 11.5px; color: var(--ink-soft); background: var(--chip); }
   .mp-head .txtbtn:hover { color: var(--accent); }
   .mpanel .empty { padding: 4px 6px; }
+  .mp-sub { font-size: 11.5px; color: var(--ink-soft); margin: 6px 6px 2px; }
 
   /* ---------- popover ---------- */
   .calrow { display: flex; align-items: center; gap: 7px; padding: 5px 6px; border-radius: 8px; background: var(--chip); margin-bottom: 4px; font-size: 12px; }
@@ -397,6 +398,7 @@
     <div class="mpanel" id="mPanel">
       <div class="mp-head"><b id="mpTitle"></b><button class="txtbtn" id="mpOpenDay" data-i18n="openDay"></button></div>
       <div id="mpList"></div>
+      <div id="mpTodos"></div>
       <div id="mpAdd"></div>
       <div class="hint" id="mpMsg"></div>
     </div>
@@ -448,7 +450,7 @@ const STR = {
       ['⚙️', '트레이 메뉴', '작업표시줄 오른쪽(시계 옆) 보라색 아이콘을 우클릭하면 숨기기, 위치 초기화, 윈도우 시작 시 자동 실행, 종료가 있어요. 안 보이면 시계 옆 <code>^</code>를 눌러 보세요.'],
     ],
     gTitle: 'Google 캘린더', gLogin: 'Google로 로그인', gLoginHint: '브라우저에서 로그인하고 허용을 누르면 연결돼요. 일정은 15분마다 새로 받아오고, 달력 화면에서 일정을 등록할 수 있어요.',
-    openDay: '하루 보기 →', mpDate: (d, w) => `${d.getMonth() + 1}월 ${d.getDate()}일 (${w})`, mpEmpty: '이 날은 캘린더 일정이 없어요.',
+    openDay: '하루 보기 →', mpTodos: '이 날의 할 일', mpDate: (d, w) => `${d.getMonth() + 1}월 ${d.getDate()}일 (${w})`, mpEmpty: '이 날은 캘린더 일정이 없어요.',
     evPh: '일정 추가 (예: 14:00 회의, 14:00-15:30 스터디)', evAdd: '등록', evAdding: '등록 중…', evAdded: (c) => `구글 캘린더(${c})에 등록했어요. 폰에도 곧 떠요.`,
     evNeedLogin: 'Google로 로그인하면 여기서 일정을 등록하고, 폰에서 등록한 일정도 볼 수 있어요.',
     evNeedScope: '일정을 등록하려면 Google 권한을 한 번 더 허용해야 해요.', evRelogin: 'Google 다시 로그인 (일정 등록 허용)',
@@ -502,7 +504,7 @@ const STR = {
       ['⚙️', 'Tray menu', 'Right-click the purple tray icon (next to the clock) to hide, reset position, start with Windows, or quit. Not there? Click the <code>^</code> next to the clock.'],
     ],
     gTitle: 'Google Calendar', gLogin: 'Sign in with Google', gLoginHint: 'Sign in and allow access in your browser. Events refresh every 15 minutes, and you can add events from the Month view.',
-    openDay: 'Open day →', mpDate: (d, w) => `${w}, ${MON_EN[d.getMonth()]} ${d.getDate()}`, mpEmpty: 'No calendar events on this day.',
+    openDay: 'Open day →', mpTodos: 'To-dos', mpDate: (d, w) => `${w}, ${MON_EN[d.getMonth()]} ${d.getDate()}`, mpEmpty: 'No calendar events on this day.',
     evPh: 'Add event (e.g. 14:00 Meeting, 14:00-15:30 Study)', evAdd: 'Add', evAdding: 'Adding…', evAdded: (c) => `Added to Google Calendar (${c}). It'll show on your phone too.`,
     evNeedLogin: 'Sign in with Google to add events here and see events you add on your phone.',
     evNeedScope: 'To add events, allow Google access once more.', evRelogin: 'Sign in again (allow adding events)',
@@ -889,10 +891,8 @@ function renderMonth() {
     const st = dayStat(k);
     const showPct = st.total && k <= today && k >= settings.startDate;
     cell.innerHTML = `<div class="top"><div class="num">${d.getDate() === 1 ? `${d.getMonth() + 1}.1` : d.getDate()}</div>${showPct ? `<span class="pct${st.done === st.total ? ' full' : ''}">${Math.round(st.pct * 100)}%</span>` : ''}</div>`;
-    const lines = [
-      ...eventsOn(k).map((e) => ({ done: false, color: calColor(e.cal), text: `${e.allDay ? '' : e.time + ' '}${e.title}` })),
-      ...(todos[k] || []).slice().sort(byTime).map((t) => ({ done: t.done, color: '', text: `${t.time ? t.time + ' ' : ''}${t.text}` })),
-    ];
+    // Cells show calendar events only; to-dos appear in the panel below when the date is clicked.
+    const lines = eventsOn(k).map((e) => ({ done: false, color: calColor(e.cal), text: `${e.allDay ? '' : e.time + ' '}${e.title}` }));
     lines.slice(0, 3).forEach((t) => {
       const el = document.createElement('div');
       el.className = 'mini' + (t.done ? ' done' : '');
@@ -929,6 +929,15 @@ function renderMonthPanel() {
     setCalendar(r.payload);
     $('mpMsg').textContent = r.ok ? t('evDeleted') : t('evFail', evErr(r.error));
     render();
+  });
+
+  // that day's to-dos (hidden from the grid; check them here or in the day view)
+  const tds = (todos[mSel] || []).slice().sort(byTime);
+  $('mpTodos').innerHTML = tds.length ? `<div class="mp-sub">${t('mpTodos')}</div>` + tds.map((it) => `<div class="item${it.done ? ' done' : ''}" data-tid="${it.id}">
+      <span class="check" data-act="toggle">${CHECK}</span>${it.time ? `<span class="time">${it.time}</span>` : ''}<span class="txt">${esc(it.text)}</span></div>`).join('') : '';
+  $('mpTodos').querySelectorAll('[data-tid]').forEach((row) => row.querySelector('[data-act=toggle]').onclick = () => {
+    const it = (todos[mSel] || []).find((x) => x.id === row.dataset.tid);
+    if (it) { it.done = !it.done; persist(); render(); }
   });
 
   const box = $('mpAdd');
