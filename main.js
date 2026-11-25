@@ -50,6 +50,15 @@ function loadData() {
   if (b) { console.warn('data file missing or damaged: restored from backup'); return b; }
   return d || {};
 }
+// Small rotating log next to the data (helps answer "why didn't it save / sync?")
+const logFile = path.join(path.dirname(dataFile), 'planner.log');
+function logLine(msg) {
+  try {
+    if (fs.existsSync(logFile) && fs.statSync(logFile).size > 512 * 1024) fs.renameSync(logFile, logFile + '.old');
+    fs.appendFileSync(logFile, `${new Date().toISOString()} ${msg}\n`, 'utf8');
+  } catch { /* logging must never break the app */ }
+}
+process.on('uncaughtException', (e) => logLine(`uncaught: ${e && e.stack || e}`));
 function backupToday() {
   if (process.env.PLANNER_DATA || !hasContent(data)) return;
   try {
@@ -201,6 +210,7 @@ function ensureOnScreen() {
 // user clicks somewhere else, then it drops back onto the desktop.
 function bringToFront() {
   if (!win) return;
+  syncOnShow();
   if (!win.isVisible()) win.showInactive();
   ensureOnScreen();
   peeking = true;
@@ -395,6 +405,7 @@ async function refreshGoogle(from, to, force) {
     googleError = null;
     googleBackoff = { until: 0, step: 0 };
   } catch (e) {
+    logLine(`google refresh failed: ${e.code || ''} ${e.message}`);
     if (e.code === 'invalid_grant') { // revoked in Google account settings, or unused for a long time
       g.refresh = null;
       googleError = 'expired';
@@ -454,6 +465,14 @@ function refreshCalendars(opts = {}) {
 
 // Automatic refresh: on start, every ~15 min (with jitter so users don't all hit Google at once),
 // and when the user comes back to the PC. Skipped while the user is away or the planner is hidden.
+// Coming back to a hidden planner: auto refresh was paused while it was hidden, so catch up now
+// (events added on the phone meanwhile show up right away). At most once a minute.
+let lastShowSync = 0;
+function syncOnShow() {
+  if (Date.now() - lastShowSync < 60 * 1000) return;
+  lastShowSync = Date.now();
+  setTimeout(() => refreshCalendars({ force: true }), 300);
+}
 function autoRefresh() {
   const { powerMonitor } = require('electron');
   const away = powerMonitor.getSystemIdleState(10 * 60) !== 'active';
@@ -542,6 +561,8 @@ ipcMain.handle('google-add-event', async (_e, calId, ev) => {
   if (count) { if (!cal.enabled) cal.enabled = true; saveSoon(); }
   const payload = calendarPayload();
   if (count && win) win.webContents.send('calendar-updated', payload);
+  if (count) setTimeout(() => refreshCalendars({ force: true }), 2500); // confirm against Google
+  if (error) logLine(`add-event failed: ${error}`);
   return error ? { ok: false, error, count, payload } : { ok: true, count, payload };
 });
 ipcMain.handle('google-delete-event', async (_e, cal, eventId) => {
@@ -557,6 +578,7 @@ ipcMain.handle('google-delete-event', async (_e, cal, eventId) => {
     if (win) win.webContents.send('calendar-updated', payload);
     return { ok: true, payload };
   } catch (e) {
+    logLine(`delete-event failed: ${e.message}`);
     return { ok: false, error: googleWriteError(e), payload: calendarPayload() };
   }
 });

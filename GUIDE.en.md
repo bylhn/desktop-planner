@@ -110,7 +110,7 @@ Events you add to Google Calendar on your phone show up in the planner, and even
    - `14:00-15:30 Study` → 14:00 to 15:30
    - `Mom's birthday` → all day
 3. It goes straight into Google Calendar, so it shows on your phone too. With several calendars, pick which one next to the box.
-4. To delete, hover over the event and click **✕** → OK. It's removed from Google Calendar (and your phone) too.
+4. To delete, hover over the event and click **✕** and it's deleted right away. It's removed from Google Calendar (and your phone) too.
 
 > If you signed in before v1.4.0, the Month view shows **"Sign in again (allow adding events)"**. Click it once and allow access.
 

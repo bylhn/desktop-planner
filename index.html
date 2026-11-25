@@ -980,9 +980,11 @@ function renderMonthPanel() {
   }).join('') : `<div class="empty">${t(multi ? 'mpEmptyRange' : 'mpEmpty')}</div>`;
   $('mpList').querySelectorAll('[data-i]').forEach((b) => b.onclick = async () => {
     const e = evs[+b.dataset.i];
-    if (!confirm(t('evDelAsk', e.title))) return;
-    const r = await window.planner.googleDeleteEvent(e.cal, e.id);
-    setCalendar(r.payload);
+    b.disabled = true; // delete right away, no confirmation popup
+    let r;
+    try { r = await window.planner.googleDeleteEvent(e.cal, e.id); }
+    catch (err) { r = { ok: false, error: String(err && err.message || err) }; }
+    if (r.payload) setCalendar(r.payload);
     $('mpMsg').textContent = r.ok ? t('evDeleted') : t('evFail', evErr(r.error));
     render();
   });
@@ -1029,8 +1031,10 @@ function renderMonthPanel() {
     mpBusy = true; $('mpMsg').textContent = ''; renderMonthPanel();
     let r;
     // range + no time → one all-day event spanning the days; range + time → the same event on each day
-    try { r = await window.planner.googleAddEvent(mpCal, { date: mSel, endDate: mSelEnd || '', ...ev }); } finally { mpBusy = false; }
-    setCalendar(r.payload);
+    try { r = await window.planner.googleAddEvent(mpCal, { date: mSel, endDate: mSelEnd || '', ...ev }); }
+    catch (err) { r = { ok: false, error: String(err && err.message || err) }; } // never leave the button stuck
+    finally { mpBusy = false; }
+    if (r.payload) setCalendar(r.payload);
     const calName = (cals.find((c) => c.id === mpCal) || {}).name || '';
     if (r.ok) { $('mpInput').value = ''; $('mpMsg').textContent = r.count > 1 ? t('evAddedN', calName, r.count) : t('evAdded', calName); }
     else $('mpMsg').textContent = t('evFail', evErr(r.error));
