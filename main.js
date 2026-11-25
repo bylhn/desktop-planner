@@ -24,7 +24,10 @@ const WM_WINDOWPOSCHANGED = 0x0047;
 
 // ---------- Storage ----------
 // Keep data in %APPDATA%\desktop-planner no matter how the app is named or packaged.
-app.setPath('userData', path.join(app.getPath('appData'), 'desktop-planner'));
+// A "test build" (package.json plannerTestBuild: true, set via electron-builder extraMetadata) is a
+// side-by-side copy for end-to-end install tests: own data folder, own autostart entry, no updates.
+const TEST_BUILD = (() => { try { return require('./package.json').plannerTestBuild === true; } catch { return false; } })();
+app.setPath('userData', path.join(app.getPath('appData'), TEST_BUILD ? 'desktop-planner-test' : 'desktop-planner'));
 
 // PLANNER_DATA lets you point at a separate data file (used for testing without touching real records).
 const dataFile = process.env.PLANNER_DATA || path.join(app.getPath('userData'), 'planner-data.json');
@@ -247,7 +250,7 @@ function trayIcon() {
 // Auto-start: an HKCU Run entry that launches start-planner.vbs (no console window).
 const { execFileSync } = require('child_process');
 const RUN_KEY = 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run';
-const RUN_NAME = 'DesktopPlanner';
+const RUN_NAME = TEST_BUILD ? 'DesktopPlannerTest' : 'DesktopPlanner';
 // Installed app: launch the exe directly. Source checkout: launch through the console-less .vbs.
 const runCommand = () => app.isPackaged
   ? `"${process.execPath}"`
@@ -606,7 +609,7 @@ function checkForUpdates() {
 }
 function initUpdater() {
   const testFeed = process.env.PLANNER_UPDATE_URL; // local test server (generic provider)
-  if (!app.isPackaged && !testFeed) return;
+  if ((!app.isPackaged && !testFeed) || TEST_BUILD) return;
   try { ({ autoUpdater } = require('electron-updater')); } catch (e) { console.error('updater unavailable', e); return; }
   if (testFeed) { autoUpdater.forceDevUpdateConfig = !app.isPackaged; autoUpdater.setFeedURL({ provider: 'generic', url: testFeed }); }
   autoUpdater.autoDownload = true;
@@ -627,7 +630,7 @@ function installUpdate() {
   setImmediate(() => autoUpdater.quitAndInstall(true, true)); // silent install, then relaunch
 }
 app.whenReady().then(initUpdater);
-ipcMain.handle('update-get', () => ({ ...updateState, current: app.getVersion(), packaged: app.isPackaged || !!process.env.PLANNER_UPDATE_URL }));
+ipcMain.handle('update-get', () => ({ ...updateState, current: app.getVersion(), packaged: (app.isPackaged && !TEST_BUILD) || !!process.env.PLANNER_UPDATE_URL }));
 // test hook: install as soon as the update is downloaded
 if (process.env.PLANNER_UPDATE_AUTOINSTALL) setInterval(() => { if (updateState.status === 'ready') installUpdate(); }, 2000);
 ipcMain.on('update-check', () => checkForUpdates());
