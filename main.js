@@ -51,6 +51,7 @@ function saveNow() {
 
 let win = null;
 let tray = null;
+let trayMenu = null;
 let pinning = false;
 
 function hwndOf(w) {
@@ -195,7 +196,7 @@ const tr = (k, ...a) => { const v = TR[lang()][k]; return typeof v === 'function
 function buildTrayMenu() {
   const login = isAutoStart();
   tray.setToolTip(tr('tip'));
-  tray.setContextMenu(Menu.buildFromTemplate([
+  tray.setContextMenu(trayMenu = Menu.buildFromTemplate([
     { label: win.isVisible() ? tr('hide') : tr('show'), click: () => { win.isVisible() ? win.hide() : (win.showInactive(), pinBottom()); buildTrayMenu(); } },
     { label: data.settings.locked ? tr('unlock') : tr('lock'), click: () => setLocked(!data.settings.locked) },
     { label: tr('reset'), click: () => { win.setBounds(defaultBounds()); data.settings.bounds = win.getBounds(); saveSoon(); } },

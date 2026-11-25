@@ -115,16 +115,27 @@ Connected events are **read-only** — they're never changed by the planner and 
 
 ## 9. Tray menu and start with Windows
 
-The tray icon is the purple checklist icon at the **far right of the taskbar, left of the clock**.
+### Finding the icon
+
+<img src="docs/guide/tray-icon.png" width="32" align="left" style="margin-right:8px"> This **purple checklist icon** at the **far right of the taskbar, left of the clock**, is the planner.
+<br clear="left">
 
 > 💡 **Can't see it?** Click the **^ (Show hidden icons)** arrow next to the clock — it may be tucked in there. Drag it onto the taskbar to keep it visible.
 
-**Right-click** the planner icon for:
-- Hide / show planner
-- Unlock / lock position
-- **Reset position** (if it went off-screen)
-- **Start with Windows** on/off
-- Quit
+- **Click:** shows the planner again if you hid it.
+- **Right-click:** opens the menu below.
+
+### Right-click menu
+
+<img src="docs/guide/tray-menu-en.png" width="280" alt="Tray right-click menu">
+
+| Item | What it does |
+|---|---|
+| **Hide / Show planner** | Temporarily hides the planner from the desktop, or brings it back. Hiding doesn't quit it. |
+| **Unlock (move / resize)** / **Lock position** | Unlock to move and resize the planner; lock it again when done. (Same as the 🔒 button at the top.) |
+| **Reset position** | Brings the planner back to the middle of the screen if it went off-screen. |
+| **Start with Windows** | When ticked, the planner opens automatically when you sign in to Windows. |
+| **Quit** | Fully closes the planner. Start it again from **Desktop Planner** on your desktop or Start menu. |
 
 ## 10. FAQ
 
