@@ -151,7 +151,6 @@ Events you add to Google Calendar on your phone show up in the planner, and even
 | **Start with Windows** | When ticked, the planner opens automatically when you sign in to Windows. |
 | **Close** | Closes the planner on your desktop. The tray icon stays, so one click on it opens the planner again. |
 | **More → Open data & backup folder** | Opens the folder with your data file and the daily automatic backups. |
-| **More → Exit completely** | Also closes the tray icon. Start it again from **Desktop Planner** on your desktop or Start menu. |
 
 ## 10. FAQ
 
@@ -168,7 +167,7 @@ By design — it's a desktop widget that always stays behind other windows. Hold
 Yes. Everything is in `%APPDATA%\desktop-planner\planner-data.json`; closing the planner or shutting down never erases it.
 
 **My records seem to be gone.**
-The planner keeps a dated backup every day in `%APPDATA%\desktop-planner\backups` (last 30 days). If the data file is deleted or damaged, the newest backup is restored automatically the next time it starts. To roll back by hand: tray icon → **More → Open data & backup folder**, choose **Exit completely**, copy the `backups\planner-data-DATE.json` you want over `planner-data.json`, then start the planner again.
+The planner keeps a dated backup every day in `%APPDATA%\desktop-planner\backups` (last 30 days). If the data file is deleted or damaged, the newest backup is restored automatically the next time it starts. To roll back by hand: tray icon → **More → Open data & backup folder**, end **Desktop Planner** in Task Manager (Ctrl+Shift+Esc), copy the `backups\planner-data-DATE.json` you want over `planner-data.json`, then start the planner again.
 
 **Google says "unverified app". Is it safe?**
 It appears because this personal project hasn't been reviewed by Google yet. The app shows your calendar and only changes events you add or delete in the Month view. Events and tokens stay on your computer. → [Privacy policy](PRIVACY.md)

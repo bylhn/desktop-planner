@@ -300,11 +300,10 @@ function buildTrayMenu() {
     { type: 'separator' },
     // "Quit" only closes the widget; the tray icon stays so it's one click to bring it back.
     { label: tr('quit'), click: () => { saveNow(); endPeek(); win.hide(); buildTrayMenu(); } },
+    // No "exit" item on purpose: the tray icon always stays. The app still quits for updates
+    // (quitAndInstall), the uninstaller, and Windows sign-out / shutdown.
     { label: tr('more'), submenu: [
       { label: tr('dataFolder'), click: () => shell.openPath(path.dirname(dataFile)) },
-      { type: 'separator' },
-      // app.quit (not app.exit) so a downloaded update gets installed on the way out
-      { label: tr('exitApp'), click: () => { saveNow(); app.quit(); } },
     ] },
   ]));
 }
