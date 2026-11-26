@@ -45,6 +45,11 @@
   footer { padding: 50px 0 40px; color: var(--soft); font-size: 13px; text-align:center; }
   footer a { margin: 0 8px; }
   .en { color: var(--soft); font-size: 14px; }
+  .stats { display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:14px; }
+  .stat { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px 16px; text-align:center; }
+  .stat b { display:block; font-size:30px; line-height:1.2; color:var(--accent); font-variant-numeric: tabular-nums; letter-spacing:-.02em; }
+  .stat span { display:block; margin-top:6px; color:var(--soft); font-size:13px; }
+  .stat small { display:block; color:var(--soft); font-size:11px; opacity:.8; }
   @media (max-width: 720px) { .two { grid-template-columns: 1fr; } nav a { margin-left: 10px; } }
 </style>
 </head>
@@ -119,6 +124,17 @@
     </div>
   </section>
 
+  <section id="stats">
+    <h2>숫자로 보는 Desktop Planner</h2>
+    <div class="stats">
+      <div class="stat"><b>2026.11.13</b><span>만들기 시작한 날</span></div>
+      <div class="stat"><b>12일</b><span>첫 공개까지 걸린 시간</span><small>2026.11.25 v1.0.0 공개</small></div>
+      <div class="stat"><b id="stDays">–</b><span>공개 후 지난 날</span></div>
+      <div class="stat"><b id="stDl">–</b><span>설치 파일 다운로드</span><small>자동 업데이트 포함</small></div>
+      <div class="stat"><b id="stRel">–</b><span>지금까지 낸 버전</span><small id="stLatest"></small></div>
+    </div>
+  </section>
+
   <section>
     <h2>시작하기</h2>
     <ol class="steps">
@@ -141,5 +157,24 @@
   <div>Desktop Planner · made by <a href="https://github.com/bylhn" style="margin:0">bylhn</a></div>
   <div style="margin-top:8px"><a href="privacy.html">개인정보처리방침 / Privacy</a><a href="https://github.com/bylhn/desktop-planner">GitHub</a><a href="https://github.com/bylhn/desktop-planner/issues">문의 / Contact</a></div>
 </footer>
+<script>
+  (function () {
+    var launched = new Date('2026-11-25T10:59:00+09:00');
+    var days = Math.floor((Date.now() - launched) / 86400000);
+    document.getElementById('stDays').textContent = days < 1 ? '오늘 공개!' : days + '일';
+    fetch('https://api.github.com/repos/bylhn/desktop-planner/releases?per_page=100')
+      .then(function (r) { if (!r.ok) throw r.status; return r.json(); })
+      .then(function (rels) {
+        rels = rels.filter(function (r) { return !r.draft; });
+        var dl = 0;
+        rels.forEach(function (r) { r.assets.forEach(function (a) { if (/\.exe$/i.test(a.name)) dl += a.download_count; }); });
+        document.getElementById('stDl').textContent = dl.toLocaleString('ko-KR') + '회';
+        document.getElementById('stRel').textContent = rels.length + '개';
+        var latest = rels.find(function (r) { return !r.prerelease; });
+        if (latest) document.getElementById('stLatest').textContent = '최신 ' + latest.tag_name;
+      })
+      .catch(function () { /* leave the dashes */ });
+  })();
+</script>
 </body>
 </html>
