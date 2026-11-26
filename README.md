@@ -11,6 +11,7 @@
   </a>
 </p>
 <p align="center"><sub>Windows 10/11 (64비트) · 무료 · 로그인 불필요 · 📖 <a href="GUIDE.md">사용 설명서</a> · 🌐 <a href="https://bylhn.github.io/desktop-planner/">홈페이지</a></sub></p>
+<p align="center">▶ <a href="https://bylhn.github.io/desktop-planner/#try"><b>설치 없이 웹에서 바로 써 보기</b></a> · 📄 <a href="https://bylhn.github.io/desktop-planner/DesktopPlanner-guide.pdf">설치·사용 가이드 PDF</a></p>
 
 ![하루 화면](docs/screenshot-day.png)
 

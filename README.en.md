@@ -11,6 +11,7 @@ Check off fixed daily routines and each day's to-dos, and look back on your prog
   </a>
 </p>
 <p align="center"><sub>Windows 10/11 (64-bit) · Free · No account needed · 📖 <a href="GUIDE.en.md">User guide</a> · 🌐 <a href="https://bylhn.github.io/desktop-planner/">Website</a></sub></p>
+<p align="center">▶ <a href="https://bylhn.github.io/desktop-planner/#try"><b>Try it in your browser — no install</b></a></p>
 
 > The app is available in **English and Korean**. It follows your Windows language, and you can switch any time in ⚙ Settings → Language.
 
