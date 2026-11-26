@@ -114,6 +114,13 @@ Events you add to Google Calendar on your phone show up in the planner, and even
 
 > If you signed in before v1.4.0, the Month view shows **"Sign in again (allow adding events)"**. Click it once and allow access.
 
+### 🔔 Reminders
+- Hover an **event or to-do that has a time** and a **🔔** appears next to ✕. Click it (it turns blue) and a **silent** notification pops up at the bottom-right **5 minutes** before it starts.
+- To ring something as you add it, turn on the 🔔 next to the input box first.
+- Only items you ring are reminded. All-day events and to-dos without a time have no 🔔.
+- Pick how early in ⚙ Settings → **Reminders**: 5 / 10 / 30 min, or Off.
+- Clicking the notification brings the planner forward on that day. Reminders only show while the planner is running.
+
 ### iCloud, Outlook and others (iCal)
 - **Outlook:** Settings → Calendar → Shared calendars → Publish a calendar → copy the **ICS** link
 - **Apple iCloud:** in Calendar, share the calendar → turn on **Public Calendar** → copy the link (`webcal://` works)

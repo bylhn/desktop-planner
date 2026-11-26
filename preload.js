@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('planner', {
   updateInstall: () => ipcRenderer.send('update-install'),
   onUpdate: (cb) => ipcRenderer.on('update-state', (_e, s) => cb(s)),
   openLink: (key) => ipcRenderer.send('open-link', key),
+  onGotoDay: (cb) => ipcRenderer.on('goto-day', (_e, k) => cb(k)),
   googleLogin: () => ipcRenderer.invoke('google-login'),
   googleLogout: () => ipcRenderer.invoke('google-logout'),
   googleToggle: (id, on) => ipcRenderer.invoke('google-toggle', id, on),

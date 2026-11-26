@@ -90,7 +90,7 @@
       }
     }
     db.events = db.events.concat(out); save();
-    return { ok: true, count: ev.time ? out.length : 1, payload: payload() };
+    return { ok: true, count: ev.time ? out.length : 1, payload: payload(), created: out.map(function (e) { return Object.assign({}, e, { cal: 'g:demo' }); }) };
   }
 
   var view = { w: innerWidth, h: innerHeight };
@@ -122,6 +122,7 @@
     updateCheck: function () {},
     updateInstall: function () {},
     onUpdate: function () {},
+    onGotoDay: function () {}, // reminders are shown by the desktop app only
     openLink: function (key) { if (LINKS[key]) window.open(LINKS[key], '_blank', 'noopener'); },
     googleLogin: function () { db.connected = true; save(); return later(payload(), 500); },
     googleLogout: function () { db.connected = false; save(); return later(payload(), 300); },

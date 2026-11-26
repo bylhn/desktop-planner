@@ -289,6 +289,7 @@ const TR = {
     updInstall: (v) => `🎉 업데이트 설치하고 다시 시작 (v${v})`, updCheck: '업데이트 확인', updDownloading: (v, p) => `업데이트 받는 중… v${v} (${p}%)`,
     errUrl: 'http(s)로 시작하는 주소가 아니에요', errHttp: (s) => `서버 응답 오류 (${s})`, errBig: '파일이 너무 커요',
     errFormat: 'iCal 형식이 아니에요. "iCal/ICS 주소"를 넣어 주세요', errTimeout: '응답이 없어요 (시간 초과)',
+    remIn: (m) => `${m}분 후 시작`, remNow: '지금 시작',
     gPageOk: '✅ Google 캘린더가 연결됐어요', gPageFail: '연결하지 못했어요', gPageClose: '이 창을 닫고 플래너로 돌아가세요.',
   },
   en: {
@@ -298,6 +299,7 @@ const TR = {
     updInstall: (v) => `🎉 Install update and restart (v${v})`, updCheck: 'Check for updates', updDownloading: (v, p) => `Downloading update… v${v} (${p}%)`,
     errUrl: 'The link must start with http(s)', errHttp: (s) => `Server error (${s})`, errBig: 'The file is too large',
     errFormat: 'Not an iCal feed. Paste the calendar\'s iCal/ICS link', errTimeout: 'No response (timed out)',
+    remIn: (m) => `Starts in ${m} min`, remNow: 'Starting now',
     gPageOk: '✅ Google Calendar is connected', gPageFail: 'Could not connect', gPageClose: 'You can close this tab and go back to the planner.',
   },
 };
@@ -568,11 +570,13 @@ ipcMain.handle('google-add-event', async (_e, calId, ev) => {
   const key = 'g:' + cal.id;
   data.calCache = data.calCache || {};
   let count = 0, error = null;
+  const made = []; // returned so the window can ring the bell on the new events
   for (const date of dates) {
     try {
       const created = await google.createEvent(g, cal.id, { date, endDate: ev.time ? '' : endDate, time: ev.time || '', endTime: ev.endTime || '', title });
       if (data.calCache[key]) data.calCache[key].events.push(...created);
       else data.calCache[key] = { events: created, at: 0 }; // at: 0 → full fetch on the next refresh
+      made.push(...created.map((x) => ({ ...x, cal: key })));
       count = ev.time ? count + 1 : created.length;
     } catch (e) { error = googleWriteError(e); break; }
   }
@@ -581,7 +585,7 @@ ipcMain.handle('google-add-event', async (_e, calId, ev) => {
   if (count && win) win.webContents.send('calendar-updated', payload);
   if (count) setTimeout(() => refreshCalendars({ force: true }), 2500); // confirm against Google
   if (error) logLine(`add-event failed: ${error}`);
-  return error ? { ok: false, error, count, payload } : { ok: true, count, payload };
+  return error ? { ok: false, error, count, payload, created: made } : { ok: true, count, payload, created: made };
 });
 ipcMain.handle('google-delete-event', async (_e, cal, eventId) => {
   const g = data.google;
@@ -606,6 +610,56 @@ ipcMain.handle('google-toggle', async (_e, id, on) => {
   if (c) c.enabled = !!on;
   saveSoon();
   return refreshCalendars();
+});
+
+// ---------- Reminders: silent Windows notifications for the items the user rang the bell on ----------
+// To-dos with `remind: true`, and calendar events whose key is in settings.evReminders (kept on this
+// PC only; nothing is written to Google). Shown `remindLead` minutes before the start (default 5,
+// -1 = off). Each one fires once; what already fired is remembered so a restart doesn't repeat it.
+const evKey = (e) => e.id ? `${e.cal}|${e.id}|${e.date}` : `${e.cal}|${e.title}|${e.date}|${e.time}`; // same as index.html
+const remindLead = () => { const m = data.settings.remindLead; return m === undefined ? 5 : +m; };
+function reminderTargets() {
+  const out = [];
+  for (const [date, list] of Object.entries(data.todos || {})) {
+    for (const t of list || []) if (t && t.remind && t.time && !t.done) out.push({ key: `todo|${t.id}|${date}|${t.time}`, date, time: t.time, title: t.text });
+  }
+  const keys = new Set(data.settings.evReminders || []);
+  if (keys.size) for (const e of calendarPayload().events) {
+    if (!e.allDay && e.time && keys.has(evKey(e))) out.push({ key: `ev|${evKey(e)}|${e.time}`, date: e.date, time: e.time, title: e.title });
+  }
+  return out;
+}
+const shownNotes = new Set(); // keep a reference, or a garbage-collected notification loses its click handler
+function showReminder(it, mins) {
+  const { Notification } = require('electron');
+  if (!Notification.isSupported()) return;
+  const n = new Notification({ title: `${it.time} ${it.title}`, body: mins > 0 ? tr('remIn', mins) : tr('remNow'), silent: true, icon: path.join(__dirname, 'assets', 'tray.png') });
+  n.on('click', () => { bringToFront(); if (win) win.webContents.send('goto-day', it.date); shownNotes.delete(n); });
+  n.on('close', () => shownNotes.delete(n));
+  shownNotes.add(n);
+  n.show();
+  logLine(`reminder: ${it.date} ${it.time}`);
+}
+function checkReminders(now = Date.now()) {
+  const lead = remindLead();
+  const fired = data.remindFired = data.remindFired || {};
+  for (const k of Object.keys(fired)) if (now - fired[k] > 3 * 24 * 60 * MIN) delete fired[k]; // forget old ones
+  if (lead < 0) return;
+  let changed = false;
+  for (const it of reminderTargets()) {
+    const [y, mo, d] = it.date.split('-').map(Number), [h, mi] = it.time.split(':').map(Number);
+    const start = new Date(y, mo - 1, d, h, mi).getTime();
+    // window: from `lead` minutes before until 1 minute after the start (a PC that wakes up later stays quiet)
+    if (now < start - lead * MIN || now > start + MIN || fired[it.key]) continue;
+    fired[it.key] = now; changed = true;
+    showReminder(it, Math.max(0, Math.ceil((start - now) / MIN)));
+  }
+  if (changed) saveSoon();
+}
+app.whenReady().then(() => {
+  if (app.isPackaged) app.setAppUserModelId('com.desktopplanner.app'); // matches the installer's shortcut, needed for toasts
+  setTimeout(checkReminders, 5000);
+  setInterval(checkReminders, 20 * 1000);
 });
 
 // ---------- Auto-update (GitHub Releases via electron-updater) ----------

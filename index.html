@@ -105,6 +105,14 @@
   .item .del { opacity: 0; color: var(--ink-soft); width: 22px; height: 22px; border-radius: 6px; flex: none; }
   .item:hover .del { opacity: 1; }
   .item .del:hover { background: var(--chip); color: var(--sun); }
+  /* reminder bell: hidden until hover, stays visible (accent) once turned on */
+  .bell { opacity: 0; width: 22px; height: 22px; border-radius: 6px; flex: none; color: var(--ink-soft); display: inline-flex; align-items: center; justify-content: center; }
+  .bell svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .item:hover .bell, .ev:hover .bell, .bell.on { opacity: 1; }
+  .bell:hover { background: var(--chip); color: var(--accent); }
+  .bell.on { color: var(--accent); background: rgba(var(--accent-rgb), 0.14); }
+  .adder .bell { opacity: 1; width: 34px; height: auto; border-radius: 9px; background: rgba(var(--base), 0.6); }
+  .adder .bell.on { background: rgba(var(--accent-rgb), 0.2); }
   .item input.edit { flex: 1; border: 0; outline: 0; background: rgba(var(--base), 0.7); border-radius: 6px; padding: 2px 6px; }
   .empty { color: var(--ink-soft); font-size: 12px; padding: 6px; }
 
@@ -322,6 +330,9 @@
   <div class="row"><button id="lightInk" data-i18n="inkDark"></button><button id="darkInk" data-i18n="inkLight"></button></div>
   <label data-i18n="blur"></label>
   <div class="row"><button id="blurOn" data-i18n="on"></button><button id="blurOff" data-i18n="off"></button></div>
+  <label data-i18n="remTitle"></label>
+  <div class="row" id="remLead"><button data-m="5"></button><button data-m="10"></button><button data-m="30"></button><button data-m="-1" data-i18n="off"></button></div>
+  <div class="hint" data-i18n="remHint"></div>
   <label data-i18n="pastTodos"></label>
   <button class="wide" id="rollover" data-i18n="rollover"></button>
   <label data-i18n="gTitle"></label>
@@ -387,7 +398,7 @@
           </div>
           <div id="todoList"></div>
         </div>
-        <div class="adder"><input id="tInput" data-i18n-ph="todoPh" maxlength="120"><button id="tAdd" data-i18n="add"></button></div>
+        <div class="adder"><input id="tInput" data-i18n-ph="todoPh" maxlength="120"><button class="bell" id="tBell"></button><button id="tAdd" data-i18n="add"></button></div>
       </div>
     </div>
   </section>
@@ -449,6 +460,10 @@ const STR = {
     prev: '이전', next: '다음', today: '오늘', viewDay: '하루', viewMonth: '달력', settings: '설정',
     opacity: '배경 투명도', inkColor: '글씨 색', inkDark: '어두운 글씨', inkLight: '밝은 글씨',
     blur: '배경 흐림', on: '켜기', off: '끄기', language: '언어 / Language',
+    remTitle: '알림 (🔔 누른 일정·할 일만)', remMin: (m) => `${m}분 전`, remHint: '시간이 있는 일정·할 일에 마우스를 올려 🔔를 누르면 소리 없이 Windows 알림이 떠요.',
+    remOn: (m) => m < 0 ? '알림 켜기 (지금은 설정에서 알림이 꺼져 있어요)' : `${m}분 전에 알림 받기`, remOff: '알림 끄기',
+    remAddOff: (m) => m < 0 ? '추가할 때 알림 켜기' : `켜고 추가하면 ${m}분 전에 알림`, remAddOn: '알림 켜짐 — 시간을 적어야 울려요',
+    remSet: (m) => m < 0 ? '🔔 (알림은 설정에서 꺼져 있어요)' : `🔔 ${m}분 전에 알려 드릴게요.`, remNeedTime: '(알림은 시간이 있는 일정에만 돼요)',
     pastTodos: '지난 할 일', rollover: '못 끝낸 지난 할 일 → 오늘로 옮기기',
     rolled: (n) => `${n}개를 오늘로 옮겼어요`, nothingToRoll: '옮길 할 일이 없어요',
     updChecking: '업데이트 확인 중…', updLatest: '최신 버전이에요', updDownloading: (v, p) => `새 버전 v${v} 받는 중… ${p}%`, updReady: (v) => `새 버전 v${v} 준비 완료`, updError: '업데이트를 확인하지 못했어요', updCheckBtn: '업데이트 확인', updInstallBtn: '지금 다시 시작',
@@ -506,6 +521,10 @@ const STR = {
     prev: 'Previous', next: 'Next', today: 'Today', viewDay: 'Day', viewMonth: 'Month', settings: 'Settings',
     opacity: 'Background opacity', inkColor: 'Text color', inkDark: 'Dark text', inkLight: 'Light text',
     blur: 'Background blur', on: 'On', off: 'Off', language: 'Language / 언어',
+    remTitle: 'Reminders (only items you 🔔)', remMin: (m) => `${m} min`, remHint: 'Hover an event or to-do with a time and click 🔔 to get a silent Windows notification before it starts.',
+    remOn: (m) => m < 0 ? 'Remind me (reminders are off in Settings)' : `Remind me ${m} min before`, remOff: 'Turn off reminder',
+    remAddOff: (m) => m < 0 ? 'Remind me when added' : `Turn on to be reminded ${m} min before`, remAddOn: 'Reminder on — needs a time',
+    remSet: (m) => m < 0 ? '🔔 (reminders are off in Settings)' : `🔔 You'll be reminded ${m} min before.`, remNeedTime: '(reminders need a time)',
     pastTodos: 'Past to-dos', rollover: 'Move unfinished past to-dos to today',
     rolled: (n) => `Moved ${n} to today`, nothingToRoll: 'Nothing to move',
     updChecking: 'Checking for updates…', updLatest: "You're up to date", updDownloading: (v, p) => `Downloading v${v}… ${p}%`, updReady: (v) => `v${v} is ready`, updError: "Couldn't check for updates", updCheckBtn: 'Check for updates', updInstallBtn: 'Restart now',
@@ -640,6 +659,23 @@ function splitEvent(raw) {
   return { time, endTime: '', title: text };
 }
 const byTime = (a, b) => (a.time || '99') < (b.time || '99') ? -1 : (a.time || '99') > (b.time || '99') ? 1 : 0;
+
+/* ---------- reminders ----------
+   The user rings the bell only on what they want a heads-up for. To-dos carry `remind: true`;
+   calendar events are remembered by key in settings.evReminders (local only, nothing is written
+   to Google). The main process shows a silent Windows notification `remindLead` minutes before. */
+const BELL = '<svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>';
+const evKey = (e) => e.id ? `${e.cal}|${e.id}|${e.date}` : `${e.cal}|${e.title}|${e.date}|${e.time}`; // same as main.js
+const evRemOn = (e) => (settings.evReminders || []).includes(evKey(e));
+function toggleEvRem(e, on) {
+  const keyDate = (k) => (k.match(/\|(\d{4}-\d{2}-\d{2})(\||$)/) || [])[1] || '';
+  const k = evKey(e), yday = addDays(today, -1);
+  // forget reminders for days that are over, so the list doesn't grow forever
+  const keep = (settings.evReminders || []).filter((x) => x !== k && keyDate(x) >= yday);
+  settings.evReminders = (on === undefined ? !evRemOn(e) : on) ? [...keep, k] : keep;
+}
+const bellBtn = (on, attrs) => `<button class="bell${on ? ' on' : ''}" ${attrs} title="${esc(t(on ? 'remOff' : 'remOn', remLead()))}">${BELL}</button>`;
+const remLead = () => settings.remindLead === undefined ? 5 : settings.remindLead;
 
 /* ---------- state ---------- */
 let todos = {};          // { 'YYYY-MM-DD': [{id, text, time, done}] }
@@ -820,12 +856,15 @@ function renderDay() {
       <span class="check" data-act="toggle">${CHECK}</span>
       ${it.time ? `<span class="time">${it.time}</span>` : ''}
       <span class="txt" data-act="edit">${esc(it.text)}</span>
+      ${it.time && !it.done ? bellBtn(it.remind, 'data-act="bell"') : ''}
       <button class="del" data-act="del" title="${t('del')}">✕</button></div>`).join('')
     : `<div class="empty">${t('todosEmpty')}</div>`;
   tl.querySelectorAll('.item[data-id]').forEach((row) => {
     const id = row.dataset.id;
     const t = todos[selected].find((x) => x.id === id);
     row.querySelector('[data-act=toggle]').onclick = () => { t.done = !t.done; persist(); render(); };
+    const bell = row.querySelector('[data-act=bell]');
+    if (bell) bell.onclick = () => { t.remind = !t.remind; persist(); render(); };
     row.querySelector('[data-act=del]').onclick = () => {
       todos[selected] = todos[selected].filter((x) => x.id !== id);
       if (!todos[selected].length) delete todos[selected];
@@ -840,8 +879,9 @@ function renderDay() {
   const now = new Date(), nowHM = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
   $('evList').innerHTML = evs.map((e) => {
     const past = selected < today || (selected === today && !e.allDay && (e.endTime || e.time) < nowHM);
-    return `<div class="ev${past ? ' past' : ''}" title="${t('evTip')}"><i class="cb" style="background:${calColor(e.cal)}"></i><span class="et">${evTime(e)}</span><span class="en">${esc(e.title)}</span></div>`;
+    return `<div class="ev${past ? ' past' : ''}" title="${t('evTip')}"><i class="cb" style="background:${calColor(e.cal)}"></i><span class="et">${evTime(e)}</span><span class="en">${esc(e.title)}</span>${!e.allDay && !past ? bellBtn(evRemOn(e), `data-ei="${evs.indexOf(e)}"`) : ''}</div>`;
   }).join('');
+  $('evList').querySelectorAll('[data-ei]').forEach((b) => b.onclick = () => { toggleEvRem(evs[+b.dataset.ei]); persist(); render(); });
 }
 
 function startEdit(row, text, apply) {
@@ -960,6 +1000,8 @@ document.addEventListener('mouseup', () => {
 function openDay(k) { const d = parseKey(k); selected = k; miniMonth = new Date(d.getFullYear(), d.getMonth(), 1); setView('day'); }
 
 /* Month view panel: the picked date's calendar events + add to Google Calendar. */
+let mpRemind = false, tRemind = false; // bell next to the month-panel / to-do input
+const nowHM = () => { const n = new Date(); return `${pad(n.getHours())}:${pad(n.getMinutes())}`; };
 let mSel = null, mSelEnd = null, mpBusy = false, mpCal = '', mpShowTodos = false; // mSel null = panel closed; mSelEnd = last day of a dragged range
 const rangeDays = () => { const out = []; for (let k = mSel; k <= (mSelEnd || mSel); k = addDays(k, 1)) out.push(k); return out; };
 const writableCals = () => (gInfo.calendars || []).filter((c) => c.writable !== false && !/#holiday@/.test(c.id));
@@ -984,8 +1026,10 @@ function renderMonthPanel() {
   $('mpList').innerHTML = evs.length ? evs.map((e, i) => {
     const del = canDel && e.id && String(e.cal).startsWith('g:') && writableCals().some((c) => 'g:' + c.id === e.cal);
     const when = multi ? `${parseKey(e.day).getMonth() + 1}/${parseKey(e.day).getDate()} ${evTime(e)}` : evTime(e);
-    return `<div class="ev"><i class="cb" style="background:${calColor(e.cal)}"></i><span class="et">${when}</span><span class="en">${esc(e.title)}</span>${del ? `<button class="x" data-i="${i}" title="${t('del')}">✕</button>` : ''}</div>`;
+    const canRing = !e.allDay && (e.day > today || (e.day === today && e.time >= nowHM()));
+    return `<div class="ev"><i class="cb" style="background:${calColor(e.cal)}"></i><span class="et">${when}</span><span class="en">${esc(e.title)}</span>${canRing ? bellBtn(evRemOn(e), `data-ri="${i}"`) : ''}${del ? `<button class="x" data-i="${i}" title="${t('del')}">✕</button>` : ''}</div>`;
   }).join('') : `<div class="empty">${t(multi ? 'mpEmptyRange' : 'mpEmpty')}</div>`;
+  $('mpList').querySelectorAll('[data-ri]').forEach((b) => b.onclick = () => { toggleEvRem(evs[+b.dataset.ri]); persist(); renderMonthPanel(); });
   $('mpList').querySelectorAll('[data-i]').forEach((b) => b.onclick = async () => {
     const e = evs[+b.dataset.i];
     b.disabled = true; // delete right away, no confirmation popup
@@ -1007,10 +1051,12 @@ function renderMonthPanel() {
   tog.onclick = () => { mpShowTodos = !mpShowTodos; renderMonthPanel(); };
   $('mpTodos').hidden = !mpShowTodos || multi;
   $('mpTodos').innerHTML = tds.length ? tds.map((it) => `<div class="item${it.done ? ' done' : ''}" data-tid="${it.id}">
-      <span class="check" data-act="toggle">${CHECK}</span>${it.time ? `<span class="time">${it.time}</span>` : ''}<span class="txt">${esc(it.text)}</span></div>`).join('') : `<div class="empty">${t('mpNoTodos')}</div>`;
-  $('mpTodos').querySelectorAll('[data-tid]').forEach((row) => row.querySelector('[data-act=toggle]').onclick = () => {
+      <span class="check" data-act="toggle">${CHECK}</span>${it.time ? `<span class="time">${it.time}</span>` : ''}<span class="txt">${esc(it.text)}</span>${it.time && !it.done ? bellBtn(it.remind, 'data-act="bell"') : ''}</div>`).join('') : `<div class="empty">${t('mpNoTodos')}</div>`;
+  $('mpTodos').querySelectorAll('[data-tid]').forEach((row) => {
     const it = (todos[mSel] || []).find((x) => x.id === row.dataset.tid);
-    if (it) { it.done = !it.done; persist(); render(); }
+    row.querySelector('[data-act=toggle]').onclick = () => { if (it) { it.done = !it.done; persist(); render(); } };
+    const bell = row.querySelector('[data-act=bell]');
+    if (bell) bell.onclick = () => { if (it) { it.remind = !it.remind; persist(); renderMonthPanel(); } };
   });
 
   const box = $('mpAdd');
@@ -1030,9 +1076,11 @@ function renderMonthPanel() {
   const keep = $('mpInput') ? $('mpInput').value : '';
   box.innerHTML = `<div class="adder"><input id="mpInput" maxlength="200" placeholder="${esc(t('evPh'))}">
     ${cals.length > 1 ? `<select id="mpCal">${cals.map((c) => `<option value="${esc(c.id)}"${c.id === mpCal ? ' selected' : ''}>${esc(c.name)}</option>`).join('')}</select>` : ''}
+    ${bellBtn(mpRemind, 'id="mpBell"')}
     <button id="mpAddBtn"${mpBusy ? ' disabled' : ''}>${mpBusy ? t('evAdding') : t('evAdd')}</button></div>`;
   $('mpInput').value = keep;
   if ($('mpCal')) $('mpCal').onchange = (e) => { mpCal = e.target.value; };
+  $('mpBell').onclick = () => { mpRemind = !mpRemind; renderMonthPanel(); $('mpInput').focus(); };
   const add = async () => {
     const v = $('mpInput').value.trim();
     if (!v || mpBusy) return;
@@ -1045,7 +1093,10 @@ function renderMonthPanel() {
     finally { mpBusy = false; }
     if (r.payload) setCalendar(r.payload);
     const calName = (cals.find((c) => c.id === mpCal) || {}).name || '';
-    if (r.ok) { $('mpInput').value = ''; $('mpMsg').textContent = r.count > 1 ? t('evAddedN', calName, r.count) : t('evAdded', calName); }
+    // bell was on while adding: remember the new event(s) for a reminder (timed events only)
+    const rang = mpRemind && ev.time && (r.created || []).length;
+    if (rang) { r.created.forEach((e) => toggleEvRem(e, true)); mpRemind = false; persist(); }
+    if (r.ok) { $('mpInput').value = ''; $('mpMsg').textContent = (r.count > 1 ? t('evAddedN', calName, r.count) : t('evAdded', calName)) + (rang ? ' ' + t('remSet', remLead()) : mpRemind && !ev.time ? ' ' + t('remNeedTime') : ''); }
     else $('mpMsg').textContent = t('evFail', evErr(r.error));
     render();
     $('mpInput') && $('mpInput').focus();
@@ -1171,6 +1222,7 @@ function render() {
   if ($('dash').classList.contains('open')) renderDash();
   renderCalSettings();
   renderGoogle();
+  renderTBell();
   applySettings();
 }
 function setView(v) {
@@ -1191,9 +1243,19 @@ function addTodo() {
   if (!v) return;
   $('tInput').value = '';
   const { time, text } = splitTime(v);
-  (todos[selected] = todos[selected] || []).push({ id: uid(), text, time, done: false });
+  const it = { id: uid(), text, time, done: false };
+  if (tRemind && time) it.remind = true; // the bell only applies to to-dos with a time
+  tRemind = false;
+  (todos[selected] = todos[selected] || []).push(it);
   persist(); render(); $('tInput').focus();
 }
+function renderTBell() {
+  const b = $('tBell');
+  b.innerHTML = BELL;
+  b.classList.toggle('on', tRemind);
+  b.title = t(tRemind ? 'remAddOn' : 'remAddOff', remLead());
+}
+$('tBell').onclick = () => { tRemind = !tRemind; renderTBell(); $('tInput').focus(); };
 function addRoutine() {
   const v = $('rInput').value.trim();
   if (!v) return;
@@ -1289,7 +1351,19 @@ function applySettings() {
   $('lightInk').classList.toggle('on', !settings.dark);
   $('darkInk').classList.toggle('on', !!settings.dark);
   $('blurOn').classList.toggle('on', settings.blur !== false);
-  $('blurOff').classList.toggle('on', settings.blur === false);}
+  $('blurOff').classList.toggle('on', settings.blur === false);
+  $('remLead').querySelectorAll('button').forEach((b) => {
+    const m = +b.dataset.m;
+    if (m > 0) b.textContent = t('remMin', m);
+    b.classList.toggle('on', m === remLead());
+  });
+}
+$('remLead').querySelectorAll('button').forEach((b) => b.onclick = () => { settings.remindLead = +b.dataset.m; persist(); render(); });
+window.planner.onGotoDay && window.planner.onGotoDay((k) => { // clicked a reminder notification
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) return;
+  selected = k; miniMonth = parseKey(k); $('pop').classList.remove('open');
+  if (view !== 'day') setView('day'); else render();
+});
 
 window.planner.onSettings((s) => { settings = { ...settings, ...s }; delete settings.routines; delete settings.routineDone; applySettings(); });
 

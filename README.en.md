@@ -29,6 +29,7 @@ Check off fixed daily routines and each day's to-dos, and look back on your prog
 - **Add events from the Month view** — click a date and type `14:00 Meeting` (one hour), `14:00-15:30 Study` or `Mom's birthday` (all day); it goes straight to Google Calendar and your phone. Events you add on your phone show up in the planner too.
 - **Drag to add multi-day events** — press on a date and drag to another to pick a range. Without a time it becomes one all-day event spanning the days; with a time (`09:00 Gym`) the same event is added on each day.
 - **Delete events** — click ✕ on an event to delete it right away, from your phone too.
+- **🔔 Reminders you pick** — hover an event or to-do that has a time and click 🔔: a silent Windows notification shows 5 minutes before it starts (or 10 / 30 — your choice). Only the items you ring; clicking the notification opens that day.
 - **Automatic backups** — a dated copy every day (last 30 days); a damaged data file is restored automatically on start. The tray icon always stays.
 - **iCal subscriptions** — also connect iCloud, Outlook or any calendar that offers an iCal (ICS) link.
 - **Month view** — click a date once to open a scrollable panel with that day's events; the **To-dos ▾** button next to the date shows its to-dos. Click the date again or any empty spot to close it; double-click to jump to that day.
