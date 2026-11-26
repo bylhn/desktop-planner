@@ -45,7 +45,7 @@
   nav a:hover { color:var(--ink); background:var(--glass2); }
 
   /* ---------- hero ---------- */
-  .hero { padding:70px 0 40px; text-align:center; position:relative; }
+  .hero { padding:72px 0 24px; text-align:center; position:relative; }
   .pill { display:inline-flex; align-items:center; gap:8px; padding:6px 14px 6px 8px; border-radius:99px; background:var(--glass); border:1px solid var(--line); color:var(--soft); font-size:13px; margin-bottom:22px; text-decoration:none; }
   .pill b { background:linear-gradient(135deg,var(--accent),var(--pink)); color:#fff; padding:2px 9px; border-radius:99px; font-size:12px; }
   .hero h1 { font-size:clamp(34px,6.4vw,68px); line-height:1.12; margin:0 0 20px; letter-spacing:-.035em; font-weight:800; }
@@ -81,10 +81,11 @@
   .glow { position:absolute; left:15%; right:15%; bottom:-6%; height:30%; background:radial-gradient(closest-side,rgba(139,125,255,.55),transparent); filter:blur(30px); transform:translateZ(-200px); }
 
   /* ---------- sections ---------- */
-  section { padding:96px 0 0; }
+  section { padding:88px 0 0; scroll-margin-top:70px; }
   .kicker { color:var(--accent2); font-weight:700; font-size:13px; letter-spacing:.14em; text-transform:uppercase; margin-bottom:10px; }
   h2 { font-size:clamp(26px,3.6vw,40px); margin:0 0 14px; letter-spacing:-.025em; line-height:1.2; }
-  .desc { color:var(--soft); margin:0 0 34px; max-width:640px; }
+  .desc { color:var(--soft); margin:0 0 28px; max-width:640px; }
+  h2 + .steps, h2 + ol.steps { margin-top:22px; }
 
   .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; perspective:1000px; }
   .card { position:relative; background:linear-gradient(160deg,rgba(255,255,255,.08),rgba(255,255,255,.025)); border:1px solid var(--line); border-radius:20px; padding:22px; transform-style:preserve-3d; transition:transform .2s ease-out, border-color .2s; will-change:transform; }
@@ -111,9 +112,9 @@
   ol.steps li::before { content:counter(s); position:absolute; left:16px; top:12px; width:28px; height:28px; border-radius:9px; background:linear-gradient(135deg,var(--accent),var(--pink)); color:#fff; font-weight:800; display:grid; place-items:center; font-size:13px; box-shadow:0 6px 16px rgba(139,125,255,.45); }
 
   /* stats */
-  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; perspective:1000px; }
-  .stat { text-align:center; padding:26px 16px 22px; }
-  .stat b { display:block; font-size:clamp(26px,3vw,34px); line-height:1.15; font-variant-numeric:tabular-nums; letter-spacing:-.03em; transform:translateZ(36px); }
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; perspective:1000px; }
+  .stat { text-align:center; padding:24px 12px 20px; display:flex; flex-direction:column; justify-content:center; min-height:150px; }
+  .stat b { display:block; white-space:nowrap; font-size:clamp(21px,2.3vw,28px); line-height:1.2; font-variant-numeric:tabular-nums; letter-spacing:-.03em; transform:translateZ(36px); }
   .stat span { display:block; margin-top:8px; color:var(--soft); font-size:13.5px; transform:translateZ(18px); }
   .stat small { display:block; color:var(--mute); font-size:12px; margin-top:2px; transform:translateZ(12px); }
 
@@ -122,12 +123,40 @@
   .google ul { margin:12px 0 14px; padding-left:20px; }
   .google li { margin:8px 0; }
 
-  .final { margin-top:96px; text-align:center; padding:56px 24px; border-radius:28px; position:relative; overflow:hidden; border:1px solid rgba(179,169,255,.25);
+  .final { margin-top:88px; text-align:center; padding:56px 24px; border-radius:28px; position:relative; overflow:hidden; border:1px solid rgba(179,169,255,.25);
     background:radial-gradient(600px 300px at 50% 0%,rgba(139,125,255,.35),transparent),linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.02)); }
   .final h2 { margin-bottom:10px; }
   .final p { color:var(--soft); margin:0 0 26px; }
 
-  .en { color:var(--soft); font-size:14px; }
+  .en { color:var(--soft); font-size:14.5px; margin:0; max-width:900px; }
+
+  /* try-it demo */
+  .demo-frame { position:relative; border-radius:20px; overflow:hidden; border:1px solid rgba(255,255,255,.16); background:#1a1838;
+    box-shadow:0 40px 100px rgba(0,0,0,.5),0 0 80px rgba(139,125,255,.22); }
+  .demo-bar { display:flex; align-items:center; gap:8px; height:38px; padding:0 14px; background:rgba(255,255,255,.06); border-bottom:1px solid var(--line); font-size:12.5px; color:var(--soft); }
+  .demo-bar i { width:11px; height:11px; border-radius:50%; background:#ff5f57; }
+  .demo-bar i:nth-child(2) { background:#febc2e; } .demo-bar i:nth-child(3) { background:#28c840; }
+  .demo-bar span { margin-left:8px; }
+  .demo-view { position:relative; width:100%; overflow:hidden; }
+  .demo-view iframe { position:absolute; left:0; top:0; width:1200px; height:780px; border:0; transform-origin:0 0; background:#cfd8ee; }
+  .demo-tools { display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; margin-top:16px; }
+  .demo-tools p { margin:0; color:var(--mute); font-size:13px; }
+  .demo-tools .acts { display:flex; gap:8px; }
+  .mini-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:11px; font-size:13px; font-weight:600; color:var(--ink); text-decoration:none; cursor:pointer;
+    background:var(--glass); border:1px solid var(--line); font-family:inherit; }
+  .mini-btn:hover { background:var(--glass2); }
+  .tries { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; margin:0 0 22px; padding:0; list-style:none; }
+  .tries li { font-size:13.5px; color:var(--soft); background:var(--glass); border:1px solid var(--line); border-radius:12px; padding:10px 14px; }
+  .tries b { color:var(--ink); display:block; margin-bottom:2px; } .tries b.in { display:inline; }
+
+  .pdf { display:flex; align-items:center; gap:18px; margin-top:14px; padding:18px 20px; border-radius:16px; text-decoration:none; color:var(--ink);
+    background:linear-gradient(135deg,rgba(139,125,255,.18),rgba(255,122,198,.08)); border:1px solid rgba(179,169,255,.3); transition:transform .2s; }
+  .pdf:hover { transform:translateY(-2px); }
+  .pdf .doc { flex:none; width:46px; height:56px; border-radius:8px; background:linear-gradient(160deg,#fff,#dcd8ff); color:#6b5cff; font-weight:800; font-size:12px; display:grid; place-items:end center; padding-bottom:8px; box-shadow:0 10px 24px rgba(0,0,0,.35); position:relative; }
+  .pdf .doc::before { content:""; position:absolute; top:10px; left:9px; right:9px; height:18px; background:repeating-linear-gradient(#b9b2ff 0 2px,transparent 2px 6px); }
+  .pdf b { display:block; font-size:15.5px; }
+  .pdf small { color:var(--soft); font-size:13px; }
+  .pdf .go { margin-left:auto; font-weight:700; color:var(--accent2); white-space:nowrap; }
   footer { padding:64px 0 48px; color:var(--mute); font-size:13px; text-align:center; }
   footer a { margin:0 8px; color:var(--soft); }
 
@@ -162,7 +191,7 @@
 <header>
   <div class="wrap">
     <a class="brand" href="./"><img src="icon.png" alt="">Desktop Planner</a>
-    <nav><a class="opt" href="#features">기능</a><a class="opt" href="#calendar">달력 사용법</a><a class="opt2" href="#google">Google 캘린더</a><a href="privacy.html">개인정보처리방침</a><a href="https://github.com/bylhn/desktop-planner">GitHub</a></nav>
+    <nav><a href="#try">체험하기</a><a class="opt" href="#features">기능</a><a class="opt" href="#calendar">달력 사용법</a><a class="opt2" href="#google">Google 캘린더</a><a href="privacy.html">개인정보처리방침</a><a href="https://github.com/bylhn/desktop-planner">GitHub</a></nav>
   </div>
 </header>
 
@@ -172,9 +201,9 @@
   <p class="lead">Desktop Planner는 Windows 바탕화면에 투명하게 떠 있는 플래너예요. 앱을 열지 않아도 오늘의 루틴과 할 일, 캘린더 일정이 늘 보이고, 체크한 기록은 그래프로 쌓여요.</p>
   <div class="cta">
     <a class="btn" href="https://github.com/bylhn/desktop-planner/releases/latest/download/DesktopPlanner-Setup.exe">⬇ Windows용 무료 다운로드</a>
-    <a class="btn ghost" href="https://github.com/bylhn/desktop-planner/blob/main/GUIDE.md">📖 사용 설명서</a>
+    <a class="btn ghost" href="#try">▶ 웹에서 바로 써 보기</a>
   </div>
-  <div class="sub">Windows 10/11 · 무료 · 오픈소스 (MIT) · 로그인 없이 바로 사용</div>
+  <div class="sub">Windows 10/11 · 무료 · 오픈소스 (MIT) · <a href="https://github.com/bylhn/desktop-planner/blob/main/GUIDE.md">사용 설명서</a> · <a href="DesktopPlanner-guide.pdf" target="_blank" rel="noopener">설치 가이드 PDF</a></div>
 
   <div class="scene" id="scene">
     <div class="stage" id="stage">
@@ -190,6 +219,26 @@
 </div>
 
 <div class="wrap">
+  <section id="try" class="reveal">
+    <div class="kicker">Try it</div>
+    <h2>설치 전에 여기서 바로 써 보세요</h2>
+    <p class="desc">진짜 앱 화면 그대로예요. 할 일을 추가하고 체크하고, 달력에서 일정을 끌어서 넣어 보세요.</p>
+    <ul class="tries">
+      <li><b>할 일 추가</b>입력칸에 <span class="scope">15:00 운동</span> 쓰고 Enter</li>
+      <li><b>달력 보기</b>오른쪽 위 <b class="in">달력</b> → 날짜 클릭</li>
+      <li><b>여러 날 일정</b>달력에서 날짜를 끌어서 선택</li>
+      <li><b>대시보드</b>오른쪽 아래 📊 스위치 켜기</li>
+    </ul>
+    <div class="demo-frame">
+      <div class="demo-bar"><i></i><i></i><i></i><span>Desktop Planner · 체험판</span></div>
+      <div class="demo-view" id="demoView"><iframe id="demo" src="demo/index.html" title="Desktop Planner 체험판" loading="lazy"></iframe></div>
+    </div>
+    <div class="demo-tools">
+      <p>체험판 기록은 이 브라우저에만 저장되고, 일정은 체험용 가짜 캘린더에 들어가요.</p>
+      <div class="acts"><button class="mini-btn" id="demoReset" type="button">↺ 처음부터</button><a class="mini-btn" href="demo/index.html" target="_blank" rel="noopener">⤢ 크게 열기</a></div>
+    </div>
+  </section>
+
   <section id="features" class="reveal">
     <div class="kicker">Features</div>
     <h2>필요한 건 다 있고, 거슬리는 건 없어요</h2>
@@ -241,8 +290,8 @@
     <h2>숫자로 보는 Desktop Planner</h2>
     <p class="desc">하루 만에 첫 버전을 내고, 직접 쓰면서 계속 다듬고 있어요.</p>
     <div class="stats">
-      <div class="card tilt stat"><b style="white-space:nowrap;font-size:clamp(22px,2.4vw,28px);line-height:1.45">11.25 09:25</b><span>만들기 시작</span><small>2026년</small></div>
-      <div class="card tilt stat"><b class="grad">14시간 30분</b><span>지금까지 만드는 데 쓴 시간</span><small>쉰 시간 빼고 · 첫 공개는 시작 1시간 36분 만에</small></div>
+      <div class="card tilt stat"><b>11.25 09:25</b><span>만들기 시작</span><small>2026년</small></div>
+      <div class="card tilt stat"><b class="grad">14시간 30분</b><span>지금까지 만드는 데 쓴 시간</span><small>쉰 시간 빼고 · 첫 공개는 1시간 36분 만에</small></div>
       <div class="card tilt stat"><b id="stAge">–</b><span>공개 후 지난 시간</span></div>
       <div class="card tilt stat"><b id="stDl" data-n="">–</b><span>설치 파일 다운로드</span><small>자동 업데이트 포함</small></div>
       <div class="card tilt stat"><b id="stRel">–</b><span>지금까지 낸 버전</span><small id="stLatest">&nbsp;</small></div>
@@ -275,11 +324,16 @@
       <li><b>루틴과 할 일 추가</b> — "고정 루틴"의 편집, 아래 입력칸에 할 일을 쓰고 Enter.</li>
       <li><b>(선택) 캘린더 연결</b> — ⚙ 설정 → Google로 로그인, 또는 iCal 주소 추가.</li>
     </ol>
+    <a class="pdf" href="DesktopPlanner-guide.pdf" target="_blank" rel="noopener">
+      <span class="doc">PDF</span>
+      <span><b>설치·사용 가이드 (PDF, 16쪽)</b><small>다운로드부터 설치, 사용법, 제거까지 화면 캡처로 한 단계씩 · 친구에게 보내기 좋아요</small></span>
+      <span class="go">열기 →</span>
+    </a>
   </section>
 
   <section class="reveal">
-    <div class="kicker">English</div>
-    <h2>English</h2>
+    <div class="kicker">In English</div>
+    <h2>Desktop Planner, in short</h2>
     <p class="en"><b>Desktop Planner</b> is a free, open-source study planner that lives on your Windows desktop: fixed daily routines, per-day to-dos, a progress dashboard, and optional Google Calendar / iCal events — add events (even across several dragged days) from the Month view and they show up on your phone. Daily automatic backups and auto-updates included.
     When you choose <b>Sign in with Google</b>, the app requests <span class="scope">calendar.readonly</span> to display your events, <span class="scope">calendar.events</span> to add the events you type in the Month view (and delete the ones you choose), and <span class="scope">email</span> to show which account is connected. Events and tokens stay on your computer; nothing is sent to the developer or third parties, and no other events are ever changed.
     Use of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements.
@@ -329,6 +383,16 @@
     });
     el.addEventListener('pointerleave', function () { el.style.transform = ''; });
   });
+
+  // demo: render the app at a desktop size and scale it to fit the frame
+  var dv = document.getElementById('demoView'), df = document.getElementById('demo');
+  function fitDemo() {
+    var w = dv.clientWidth, base = w < 640 ? 900 : 1200, s = w / base, h = Math.round(base * .65);
+    df.style.width = base + 'px'; df.style.height = h + 'px';
+    df.style.transform = 'scale(' + s + ')'; dv.style.height = Math.round(h * s) + 'px';
+  }
+  fitDemo(); addEventListener('resize', fitDemo);
+  document.getElementById('demoReset').onclick = function () { try { df.contentWindow.postMessage('dp-demo-reset', location.origin); } catch (e) { df.src = df.src; } };
 
   // reveal on scroll
   var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }); }, { threshold: .12 });

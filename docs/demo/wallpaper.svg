@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c9d7f2"/>
+      <stop offset=".55" stop-color="#f4e3d3"/>
+      <stop offset="1" stop-color="#f7d9c4"/>
+    </linearGradient>
+    <radialGradient id="sun" cx=".68" cy=".42" r=".35">
+      <stop offset="0" stop-color="#fff6e0" stop-opacity=".95"/>
+      <stop offset="1" stop-color="#fff6e0" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft"><feGaussianBlur stdDeviation="6"/></filter>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#sky)"/>
+  <rect width="1600" height="1000" fill="url(#sun)"/>
+  <path filter="url(#soft)" fill="#c3cde6" opacity=".7" d="M0 620 L180 520 L330 590 L520 450 L700 560 L860 480 L1040 580 L1220 470 L1400 560 L1600 500 V1000 H0Z"/>
+  <path filter="url(#soft)" fill="#b2bfe0" opacity=".7" d="M0 720 L220 640 L420 700 L640 610 L860 690 L1080 630 L1300 700 L1600 640 V1000 H0Z"/>
+  <path filter="url(#soft)" fill="#a3b2da" opacity=".75" d="M0 830 C300 760 520 800 800 780 C1080 760 1300 820 1600 790 V1000 H0Z"/>
+</svg>

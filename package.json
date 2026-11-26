@@ -9,7 +9,8 @@
   "scripts": {
     "start": "electron .",
     "icon": "py -I build/make-icon.py",
-    "dist": "electron-builder --win nsis"
+    "dist": "electron-builder --win nsis",
+    "demo": "node tools/build-demo.js"
   },
   "license": "MIT",
   "dependencies": {
