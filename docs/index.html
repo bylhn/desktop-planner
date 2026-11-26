@@ -139,6 +139,10 @@
   .demo-bar span { margin-left:8px; }
   .demo-view { position:relative; width:100%; overflow:hidden; }
   .demo-view iframe { position:absolute; left:0; top:0; width:1200px; height:780px; border:0; transform-origin:0 0; background:#cfd8ee; }
+  .demo-open { display:none; position:absolute; inset:0; z-index:2; align-items:center; justify-content:center; text-decoration:none; background:linear-gradient(transparent 40%,rgba(11,10,31,.55)); }
+  .demo-open span { margin-top:auto; margin-bottom:14px; padding:9px 16px; border-radius:12px; color:#fff; font-weight:700; font-size:14px; background:linear-gradient(135deg,#9d90ff,#6b5cff); box-shadow:0 8px 24px rgba(107,92,255,.5); }
+  .demo-view.small .demo-open { display:flex; }
+  .demo-view.small iframe { pointer-events:none; }
   .demo-tools { display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; margin-top:16px; }
   .demo-tools p { margin:0; color:var(--mute); font-size:13px; }
   .demo-tools .acts { display:flex; gap:8px; }
@@ -231,7 +235,7 @@
     </ul>
     <div class="demo-frame">
       <div class="demo-bar"><i></i><i></i><i></i><span>Desktop Planner · 체험판</span></div>
-      <div class="demo-view" id="demoView"><iframe id="demo" src="demo/index.html" title="Desktop Planner 체험판" loading="lazy"></iframe></div>
+      <div class="demo-view" id="demoView"><iframe id="demo" src="demo/index.html" title="Desktop Planner 체험판" loading="lazy"></iframe><a class="demo-open" href="demo/index.html" target="_blank" rel="noopener"><span>▶ 탭해서 크게 써 보기</span></a></div>
     </div>
     <div class="demo-tools">
       <p>체험판 기록은 이 브라우저에만 저장되고, 일정은 체험용 가짜 캘린더에 들어가요.</p>
@@ -390,6 +394,7 @@
     var w = dv.clientWidth, base = w < 640 ? 900 : 1200, s = w / base, h = Math.round(base * .65);
     df.style.width = base + 'px'; df.style.height = h + 'px';
     df.style.transform = 'scale(' + s + ')'; dv.style.height = Math.round(h * s) + 'px';
+    dv.classList.toggle('small', w < 640);
   }
   fitDemo(); addEventListener('resize', fitDemo);
   document.getElementById('demoReset').onclick = function () { try { df.contentWindow.postMessage('dp-demo-reset', location.origin); } catch (e) { df.src = df.src; } };
