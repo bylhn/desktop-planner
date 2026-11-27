@@ -95,7 +95,7 @@ Flip **📊 Dashboard** at the bottom-right; flip it again (or press Esc) to clo
 
 ## 7. Calendars
 
-Events you add to Google Calendar on your phone show up in the planner, and events you add in the planner's Month view go straight to Google Calendar (and your phone). Calendar events don't count toward completion. While you're using the PC they refresh every 15 minutes; refresh pauses while you're away (screen locked, idle) or the planner is hidden, and catches up as soon as you're back. Holiday calendars refresh once a day. Use **↻ Sync** in Settings to refresh right away.
+Events you add to Google Calendar on your phone show up in the planner, and events you add in the planner's Month view go straight to Google Calendar (and your phone). Calendar events don't count toward completion. Events that run past midnight or over several days show on every day they cover (e.g. `~01:30` on the next day). While you're using the PC they refresh every 15 minutes; refresh pauses while you're away (screen locked, idle) or the planner is hidden, and catches up as soon as you're back. Holiday calendars refresh once a day. Use **↻ Sync** in Settings to refresh right away.
 
 ![Settings](docs/guide/en-settings.png)
 

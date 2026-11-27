@@ -467,7 +467,7 @@
   </section>
 </main>
 
-<script src="demo-api.js?v=1.5.2"></script>
+<script src="demo-api.js?v=1.5.3"></script>
 <script>
 /* ---------- i18n ---------- */
 const MON_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -507,7 +507,7 @@ const STR = {
     evPh: '일정 추가 (예: 14:00 회의, 14:00-15:30 스터디)', evAdd: '등록', evAdding: '등록 중…', evAdded: (c) => `구글 캘린더(${c})에 등록했어요. 폰에도 곧 떠요.`,
     evNeedLogin: 'Google로 로그인하면 여기서 일정을 등록하고, 폰에서 등록한 일정도 볼 수 있어요.',
     evNeedScope: '일정을 등록하려면 Google 권한을 한 번 더 허용해야 해요.', evRelogin: 'Google 다시 로그인 (일정 등록 허용)',
-    evDelAsk: (n) => `"${n}" 일정을 구글 캘린더에서 삭제할까요? 폰에서도 사라지고 되돌릴 수 없어요.`, evDeleted: '삭제했어요.', evDeletedUndo: (n) => `"${n}" 일정을 지웠어요.`, evUndo: '되돌리기', evRestored: '되돌렸어요.', evNotOrganizer: '다른 사람이 만든 일정이라 여기서는 고칠 수 없어요. 만든 사람만 바꿀 수 있어요.', evInvited: '초대받은 일정 — 만든 사람만 고칠 수 있어요', evEdit: '수정', evSave: '저장', evCancel: '취소', evSaving: '저장 중…', evSaved: '수정했어요. 폰에도 곧 반영돼요.', evEditHint: '시간을 지우면 종일 일정', evEditBad: '날짜와 제목을 확인해 주세요.',
+    evDelAsk: (n) => `"${n}" 일정을 구글 캘린더에서 삭제할까요? 폰에서도 사라지고 되돌릴 수 없어요.`, evDeleted: '삭제했어요.', evGone: '이미 폰이나 다른 곳에서 지워진 일정이에요. 목록을 새로 받아왔어요.', evDeletedUndo: (n) => `"${n}" 일정을 지웠어요.`, evUndo: '되돌리기', evRestored: '되돌렸어요.', evNotOrganizer: '다른 사람이 만든 일정이라 여기서는 고칠 수 없어요. 만든 사람만 바꿀 수 있어요.', evInvited: '초대받은 일정 — 만든 사람만 고칠 수 있어요', evEdit: '수정', evSave: '저장', evCancel: '취소', evSaving: '저장 중…', evSaved: '수정했어요. 폰에도 곧 반영돼요.', evEditHint: '시간을 지우면 종일 일정', evEditBad: '날짜와 제목을 확인해 주세요.',
     evFail: (e) => `실패했어요: ${e}`, evNoWritable: '등록할 수 있는 캘린더가 없어요.',
     gWaiting: '브라우저에서 로그인을 마쳐 주세요…', gSync: '동기화', gLogout: '연결 해제', gShowCals: '표시할 캘린더', gSynced: '동기화했어요.',
     gNoClient: '이 버전에는 Google 로그인 설정(google-client.json)이 없어요.', gExpired: '로그인이 만료됐어요. 다시 로그인해 주세요.', gTimeout: '로그인 시간이 지났어요. 다시 시도해 주세요.',
@@ -570,7 +570,7 @@ const STR = {
     evPh: 'Add event (e.g. 14:00 Meeting, 14:00-15:30 Study)', evAdd: 'Add', evAdding: 'Adding…', evAdded: (c) => `Added to Google Calendar (${c}). It'll show on your phone too.`,
     evNeedLogin: 'Sign in with Google to add events here and see events you add on your phone.',
     evNeedScope: 'To add events, allow Google access once more.', evRelogin: 'Sign in again (allow adding events)',
-    evDelAsk: (n) => `Delete "${n}" from Google Calendar? It disappears from your phone too and can't be undone.`, evDeleted: 'Deleted.', evDeletedUndo: (n) => `Deleted "${n}".`, evUndo: 'Undo', evRestored: 'Restored.', evNotOrganizer: "Someone else created this event, so only they can change it.", evInvited: 'Invited event — only the organizer can change it', evEdit: 'Edit', evSave: 'Save', evCancel: 'Cancel', evSaving: 'Saving…', evSaved: 'Saved. Your phone will update shortly.', evEditHint: 'No time = all-day', evEditBad: 'Check the date and title.',
+    evDelAsk: (n) => `Delete "${n}" from Google Calendar? It disappears from your phone too and can't be undone.`, evDeleted: 'Deleted.', evGone: 'This event was already deleted elsewhere (phone or web). The list has been refreshed.', evDeletedUndo: (n) => `Deleted "${n}".`, evUndo: 'Undo', evRestored: 'Restored.', evNotOrganizer: "Someone else created this event, so only they can change it.", evInvited: 'Invited event — only the organizer can change it', evEdit: 'Edit', evSave: 'Save', evCancel: 'Cancel', evSaving: 'Saving…', evSaved: 'Saved. Your phone will update shortly.', evEditHint: 'No time = all-day', evEditBad: 'Check the date and title.',
     evFail: (e) => `Couldn't do that: ${e}`, evNoWritable: 'No calendar you can add events to.',
     gWaiting: 'Finish signing in in your browser…', gSync: 'Sync', gLogout: 'Disconnect', gShowCals: 'Calendars to show', gSynced: 'Synced.',
     gNoClient: 'This build has no Google sign-in setup (google-client.json).', gExpired: 'Your sign-in expired. Please sign in again.', gTimeout: 'Sign-in timed out. Please try again.',
@@ -743,11 +743,29 @@ function renderGoogle() {
   $('gOut').onclick = async () => { gBusy = 'out'; try { setCalendar(await window.planner.googleLogout()); } finally { gBusy = ''; render(); } };
   box.querySelectorAll('[data-gid]').forEach((cb) => cb.onchange = async () => { setCalendar(await window.planner.googleToggle(cb.dataset.gid, cb.checked)); render(); });
 }
+/* A timed event that ends on a later day (`dur` minutes) also shows on the days it runs into:
+   middle days as all-day, the last day as 00:00–end. These copies carry `cont` and `orig`
+   (the real event) — editing / deleting goes to the original, and they never ring. */
+function withCarryOver(list) {
+  const out = list.slice();
+  for (const e of list) {
+    if (e.allDay || !e.dur || e.cont) continue;
+    const [h, m] = e.time.split(':').map(Number);
+    const endM = h * 60 + m + e.dur; // minutes from the start day's midnight
+    for (let n = 1; n < 62 && n * 1440 < endM; n++) {
+      const left = endM - n * 1440, last = left <= 1440;
+      out.push({ ...e, date: addDays(e.date, n), cont: true, orig: e, allDay: !last || left === 1440,
+        time: last && left < 1440 ? '00:00' : '', endTime: last && left < 1440 ? `${pad(Math.floor(left / 60))}:${pad(left % 60)}` : '' });
+    }
+  }
+  return out;
+}
+const evLabel = (e) => e.cont ? (e.allDay ? '' : `~${e.endTime} `) : e.allDay ? '' : e.time + ' '; // short form for cells / upcoming
 let lastCal = null; // last payload, so an undone delete can show the event again
 const delPending = new Map(); // cal+id → { e, timer } while a delete can still be undone
 function setCalendar(p) {
   lastCal = p;
-  calEvents = (p.events || []).filter((e) => !delPending.has(e.cal + e.id)); calStatus = p.status || {}; calMeta = p.meta || {}; gInfo = p.google || {};
+  calEvents = withCarryOver((p.events || []).filter((e) => !delPending.has(e.cal + e.id))); calStatus = p.status || {}; calMeta = p.meta || {}; gInfo = p.google || {};
   evByDate = new Map();
   for (const e of calEvents) { if (!evByDate.has(e.date)) evByDate.set(e.date, []); evByDate.get(e.date).push(e); }
   for (const list of evByDate.values()) list.sort((a, b) => (a.allDay ? '' : a.time).localeCompare(b.allDay ? '' : b.time));
@@ -911,7 +929,7 @@ function renderDay() {
   const now = new Date(), nowHM = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
   $('evList').innerHTML = evs.map((e) => {
     const past = selected < today || (selected === today && !e.allDay && (e.endTime || e.time) < nowHM);
-    return `<div class="ev${past ? ' past' : ''}" title="${t('evTip')}"><i class="cb" style="background:${calColor(e.cal)}"></i><span class="et">${evTime(e)}</span><span class="en">${esc(e.title)}</span>${!e.allDay && !past ? bellBtn(evRemOn(e), `data-ei="${evs.indexOf(e)}"`) : ''}</div>`;
+    return `<div class="ev${past ? ' past' : ''}" title="${t('evTip')}"><i class="cb" style="background:${calColor(e.cal)}"></i><span class="et">${evTime(e)}</span><span class="en">${esc(e.title)}</span>${!e.allDay && !e.cont && !past ? bellBtn(evRemOn(e), `data-ei="${evs.indexOf(e)}"`) : ''}</div>`;
   }).join('');
   $('evList').querySelectorAll('[data-ei]').forEach((b) => b.onclick = () => { toggleEvRem(evs[+b.dataset.ei]); persist(); render(); });
 }
@@ -957,7 +975,7 @@ function renderSide() {
   for (let i = 1; i <= 14 && ups.length < 10; i++) {
     const k = addDays(today, i);
     const dayItems = [
-      ...eventsOn(k).map((e) => ({ sort: e.allDay ? '' : e.time, html: `<i class="dot" style="background:${calColor(e.cal)}"></i>${e.allDay ? '' : e.time + ' '}${esc(e.title)}` })),
+      ...eventsOn(k).map((e) => ({ sort: e.allDay ? '' : e.time, html: `<i class="dot" style="background:${calColor(e.cal)}"></i>${evLabel(e)}${esc(e.title)}` })),
       ...(todos[k] || []).filter((t) => !t.done).map((t) => ({ sort: t.time || '99', html: `${t.time ? t.time + ' ' : ''}${esc(t.text)}` })),
     ].sort((a, b) => a.sort.localeCompare(b.sort));
     dayItems.forEach((it) => ups.push([k, it]));
@@ -985,7 +1003,7 @@ function renderMonth() {
     const showPct = st.total && k <= today && k >= settings.startDate;
     cell.innerHTML = `<div class="top"><div class="num">${d.getDate() === 1 ? `${d.getMonth() + 1}.1` : d.getDate()}</div>${showPct ? `<span class="pct${st.done === st.total ? ' full' : ''}">${Math.round(st.pct * 100)}%</span>` : ''}</div>`;
     // Cells show calendar events only; to-dos appear in the panel below when the date is clicked.
-    const lines = eventsOn(k).map((e) => ({ done: false, color: calColor(e.cal), text: `${e.allDay ? '' : e.time + ' '}${e.title}` }));
+    const lines = eventsOn(k).map((e) => ({ done: false, color: calColor(e.cal), text: `${evLabel(e)}${e.title}` }));
     lines.slice(0, 3).forEach((t) => {
       const el = document.createElement('div');
       el.className = 'mini' + (t.done ? ' done' : '');
@@ -1063,7 +1081,7 @@ function renderMonthPanel() {
     const del = canDel && e.id && String(e.cal).startsWith('g:') && writableCals().some((c) => 'g:' + c.id === e.cal);
     const edit = del && !e.ro; // invited events: only the organizer can change them
     const when = multi ? `${parseKey(e.day).getMonth() + 1}/${parseKey(e.day).getDate()} ${evTime(e)}` : evTime(e);
-    const canRing = !e.allDay && (e.day > today || (e.day === today && e.time >= nowHM()));
+    const canRing = !e.allDay && !e.cont && (e.day > today || (e.day === today && e.time >= nowHM()));
     if (edit && mpEdit && mpEdit.key === e.cal + e.id) return `<div class="ev-edit"><div class="adder">
       <input type="date" class="ed-date" value="${mpEdit.date}"><input class="ed-text" maxlength="200" placeholder="${esc(t('evPh'))}"></div>
       <div class="eb"><span class="hint">${t('evEditHint')}</span><button class="cancel">${t('evCancel')}</button><button class="save"${mpEdit.busy ? ' disabled' : ''}>${mpEdit.busy ? t('evSaving') : t('evSave')}</button></div></div>`;
@@ -1071,7 +1089,7 @@ function renderMonthPanel() {
   }).join('') : `<div class="empty">${t(multi ? 'mpEmptyRange' : 'mpEmpty')}</div>`;
   // edit: click the title (or ✎) → that row becomes a small form; Enter saves, Esc cancels
   $('mpList').querySelectorAll('[data-ed]').forEach((b) => b.onclick = () => {
-    const e = evs[+b.dataset.ed];
+    const pick = evs[+b.dataset.ed], e = pick.orig ? { ...pick.orig, day: pick.orig.date } : pick; // a carried-over day edits the real event
     let start = e.day; // a multi-day all-day event: start from its first day
     if (e.allDay) for (let n = 0; n < 62 && eventsOn(addDays(start, -1)).some((x) => x.cal === e.cal && x.id === e.id); n++) start = addDays(start, -1);
     mpEdit = { key: e.cal + e.id, cal: e.cal, id: e.id, ev: e, date: start, text: e.allDay ? e.title : `${e.time}${evEnd(e) ? '-' + evEnd(e) : ''} ${e.title}`, busy: false };
@@ -1105,7 +1123,8 @@ function renderMonthPanel() {
         if (evRemOn(old)) { toggleEvRem(old, false); if (ev.time) (r.updated || []).forEach((x) => toggleEvRem(x, true)); persist(); }
         mpEdit = null;
         $('mpMsg').textContent = t('evSaved');
-      } else $('mpMsg').textContent = t('evFail', evErr(r.error));
+      } else if (r.error === 'gone') { mpEdit = null; $('mpMsg').textContent = t('evGone'); }
+      else $('mpMsg').textContent = t('evFail', evErr(r.error));
       render();
     };
     ef.querySelector('.cancel').onclick = cancel;
@@ -1115,7 +1134,7 @@ function renderMonthPanel() {
   }
   $('mpList').querySelectorAll('[data-ri]').forEach((b) => b.onclick = () => { toggleEvRem(evs[+b.dataset.ri]); persist(); renderMonthPanel(); });
   $('mpList').querySelectorAll('[data-i]').forEach((b) => b.onclick = () => {
-    const e = evs[+b.dataset.i];
+    const e = evs[+b.dataset.i].orig || evs[+b.dataset.i];
     if (mpEdit && mpEdit.key === e.cal + e.id) mpEdit = null;
     scheduleDelete(e);
     if ($('mpInput')) $('mpInput').focus(); // keep typing right after a delete

@@ -549,6 +549,7 @@ function googleWriteError(e) {
   if (e.code === 'invalid_grant') { if (data.google) data.google.refresh = null; googleError = 'expired'; return 'expired'; }
   if (e.code === 403 && /insufficient/i.test((e.reason || '') + e.message)) { if (data.google) data.google.scope = ''; return 'scope'; }
   if (e.code === 403 && /forbiddenForNonOrganizer|requiredAccessLevel|forbidden/i.test(e.reason || '')) return 'not-organizer';
+  if (e.code === 404 || e.code === 410) return 'gone'; // deleted on the phone / web meanwhile
   return e.name === 'TimeoutError' ? tr('errTimeout') : e.message;
 }
 ipcMain.handle('google-add-event', async (_e, calId, ev) => {
@@ -635,7 +636,13 @@ ipcMain.handle('google-update-event', async (_e, cal, eventId, ev) => {
     return { ok: true, payload, updated: saved.map((x) => ({ ...x, cal })) };
   } catch (e) {
     logLine(`update-event failed: ${e.message}`);
-    return { ok: false, error: googleWriteError(e), payload: calendarPayload() };
+    const error = googleWriteError(e);
+    if (error === 'gone') { // drop it here too, then catch up with Google
+      if (entry) entry.events = entry.events.filter((x) => x.id !== eventId);
+      saveSoon();
+      setTimeout(() => refreshCalendars({ force: true }), 300);
+    }
+    return { ok: false, error, payload: calendarPayload() };
   }
 });
 
