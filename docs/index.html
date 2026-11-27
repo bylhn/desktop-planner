@@ -88,7 +88,7 @@
   .desc { color:var(--soft); margin:0 0 28px; max-width:640px; }
   h2 + .steps, h2 + ol.steps { margin-top:22px; }
 
-  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; perspective:1000px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; }
   .card { position:relative; background:linear-gradient(160deg,rgba(255,255,255,.08),rgba(255,255,255,.025)); border:1px solid var(--line); border-radius:20px; padding:22px; transform-style:preserve-3d; transition:transform .2s ease-out, border-color .2s; will-change:transform; }
   .card:hover { border-color:rgba(179,169,255,.35); }
   .card::before { content:""; position:absolute; inset:0; border-radius:inherit; background:radial-gradient(300px circle at var(--mx,50%) var(--my,0%),rgba(139,125,255,.18),transparent 60%); opacity:0; transition:opacity .3s; pointer-events:none; }
@@ -118,8 +118,10 @@
   ol.steps li::before { content:counter(s); position:absolute; left:16px; top:12px; width:28px; height:28px; border-radius:9px; background:linear-gradient(135deg,var(--accent),var(--pink)); color:#fff; font-weight:800; display:grid; place-items:center; font-size:13px; box-shadow:0 6px 16px rgba(139,125,255,.45); }
 
   /* stats */
-  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; perspective:1000px; }
-  .stat { text-align:center; padding:24px 12px 20px; display:flex; flex-direction:column; justify-content:center; min-height:150px; }
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; }
+  .stat { text-align:center; padding:24px 12px 20px; display:flex; flex-direction:column; justify-content:flex-start; min-height:150px; }
+  /* each card is its own 3D scene, so raised text stays centred in its card */
+  .card.tilt { transform:perspective(900px); }
   .stat b { display:block; white-space:nowrap; font-size:clamp(21px,2.3vw,28px); line-height:1.2; font-variant-numeric:tabular-nums; letter-spacing:-.03em; transform:translateZ(36px); }
   .stat span { display:block; margin-top:8px; color:var(--soft); font-size:13.5px; transform:translateZ(18px); }
   .stat small { display:block; color:var(--mute); font-size:12px; margin-top:2px; transform:translateZ(12px); }
@@ -410,7 +412,7 @@
   if (!reduce && fine) document.querySelectorAll('.tilt').forEach(function (el) {
     el.addEventListener('pointermove', function (e) {
       var r = el.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
-      el.style.transform = 'rotateX(' + ((.5 - y) * 14).toFixed(2) + 'deg) rotateY(' + ((x - .5) * 14).toFixed(2) + 'deg) translateZ(6px)';
+      el.style.transform = 'perspective(900px) rotateX(' + ((.5 - y) * 14).toFixed(2) + 'deg) rotateY(' + ((x - .5) * 14).toFixed(2) + 'deg) translateZ(6px)';
       el.style.setProperty('--mx', (x * 100) + '%'); el.style.setProperty('--my', (y * 100) + '%');
     });
     el.addEventListener('pointerleave', function () { el.style.transform = ''; });
