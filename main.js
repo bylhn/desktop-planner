@@ -548,6 +548,7 @@ const isDay = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s), isHM = (s) => !s || /^\d{2}:
 function googleWriteError(e) {
   if (e.code === 'invalid_grant') { if (data.google) data.google.refresh = null; googleError = 'expired'; return 'expired'; }
   if (e.code === 403 && /insufficient/i.test((e.reason || '') + e.message)) { if (data.google) data.google.scope = ''; return 'scope'; }
+  if (e.code === 403 && /forbiddenForNonOrganizer|requiredAccessLevel|forbidden/i.test(e.reason || '')) return 'not-organizer';
   return e.name === 'TimeoutError' ? tr('errTimeout') : e.message;
 }
 ipcMain.handle('google-add-event', async (_e, calId, ev) => {
@@ -624,7 +625,8 @@ ipcMain.handle('google-update-event', async (_e, cal, eventId, ev) => {
     endDate = `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
   }
   try {
-    const saved = await google.updateEvent(g, cal.slice(2), String(eventId), { date: ev.date, endDate, time: ev.time || '', endTime: ev.endTime || '', title });
+    const dur = ev.time && !ev.endTime && Number.isFinite(+ev.dur) && +ev.dur > 0 ? Math.min(+ev.dur, 62 * 1440) : 0; // keep a long event's length
+    const saved = await google.updateEvent(g, cal.slice(2), String(eventId), { date: ev.date, endDate, time: ev.time || '', endTime: ev.endTime || '', title, dur });
     if (entry) entry.events = entry.events.filter((x) => x.id !== eventId).concat(saved);
     saveSoon();
     const payload = calendarPayload();

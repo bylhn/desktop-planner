@@ -158,32 +158,39 @@ async function listEvents(account, calId, from, to) {
   do {
     const q = new URLSearchParams({
       timeMin: new Date(from).toISOString(), timeMax: new Date(to).toISOString(), singleEvents: 'true',
-      orderBy: 'startTime', maxResults: '2500', fields: 'items(id,summary,start,end,status),nextPageToken',
+      orderBy: 'startTime', maxResults: '2500', fields: 'items(id,summary,start,end,status,organizer/self,guestsCanModify),nextPageToken',
     });
     if (page) q.set('pageToken', page);
     const b = await api(account, `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events?${q}`);
     for (const e of b.items || []) {
       if (e.status === 'cancelled' || !e.start) continue;
       const title = e.summary || '(no title)';
+      const ro = !!(e.organizer && !e.organizer.self && !e.guestsCanModify); // invited: only the organizer can change it
       if (e.start.date) {
         const s = parseDate(e.start.date), en = e.end && e.end.date ? parseDate(e.end.date) : new Date(s.getTime() + DAY_MS);
         const days = Math.min(62, Math.max(1, Math.round((en - s) / DAY_MS)));
         for (let i = 0; i < days; i++) {
           const d = new Date(s.getFullYear(), s.getMonth(), s.getDate() + i);
-          if (d.getTime() >= from && d.getTime() < to) out.push({ id: e.id, date: dayKey(d), time: '', endTime: '', title, allDay: true });
+          if (d.getTime() >= from && d.getTime() < to) out.push({ id: e.id, date: dayKey(d), time: '', endTime: '', title, allDay: true, ...(ro && { ro }) });
         }
       } else if (e.start.dateTime) {
-        out.push(timedEvent(e.id, title, new Date(e.start.dateTime), e.end && e.end.dateTime ? new Date(e.end.dateTime) : null));
+        out.push({ ...timedEvent(e.id, title, new Date(e.start.dateTime), e.end && e.end.dateTime ? new Date(e.end.dateTime) : null), ...(ro && { ro }) });
       }
     }
     page = b.nextPageToken || '';
   } while (page);
   return out;
 }
-const timedEvent = (id, title, s, en) => ({ id, date: dayKey(s), time: hm(s), endTime: en && en > s && dayKey(en) === dayKey(s) ? hm(en) : '', title, allDay: false });
+const timedEvent = (id, title, s, en) => {
+  const sameDay = en && en > s && dayKey(en) === dayKey(s);
+  const out = { id, date: dayKey(s), time: hm(s), endTime: sameDay ? hm(en) : '', title, allDay: false };
+  if (en && en > s && !sameDay) out.dur = Math.round((en - s) / 60000); // ends on a later day
+  return out;
+};
 
 // ev = { date: 'YYYY-MM-DD', endDate?: 'YYYY-MM-DD', time: 'HH:MM' | '', endTime: 'HH:MM' | '', title }
-// No time → all-day event (spanning date..endDate). Time without an end → one hour long.
+// No time → all-day event (spanning date..endDate). Time without an end → `dur` minutes if given, else one hour.
+// An end earlier than the start (23:00-01:00) ends the next day.
 function eventBody(ev) {
   const body = { summary: ev.title };
   if (!ev.time) {
@@ -194,7 +201,9 @@ function eventBody(ev) {
     const [y, m, d] = ev.date.split('-').map(Number);
     const at = (t) => { const [h, mi] = t.split(':').map(Number); return new Date(y, m - 1, d, h, mi); };
     const s = at(ev.time);
-    let en = ev.endTime ? at(ev.endTime) : new Date(s.getTime() + 3600000);
+    const dur = Number(ev.dur) > 0 ? Math.min(Number(ev.dur), 62 * 1440) * 60000 : 3600000;
+    let en = ev.endTime ? at(ev.endTime) : new Date(s.getTime() + dur);
+    if (en < s) en = new Date(en.getTime() + DAY_MS);
     if (en <= s) en = new Date(s.getTime() + 3600000);
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     body.start = { dateTime: s.toISOString(), timeZone: tz };

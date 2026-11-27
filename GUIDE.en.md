@@ -115,7 +115,9 @@ Events you add to Google Calendar on your phone show up in the planner, and even
    - `Mom's birthday` → all day
 3. It goes straight into Google Calendar, so it shows on your phone too. With several calendars, pick which one next to the box.
 4. To edit, **click the event's title** or the **✎** that appears on hover. Change the date and the time / title (like `15:00-16:00 Meeting`) and press **Enter** (Esc cancels). Remove the time to make it all-day. Google Calendar (and your phone) updates right away, and a 🔔 reminder follows the new time.
-5. To delete, hover over the event and click **✕** and it's deleted right away. It's removed from Google Calendar (and your phone) too.
+5. To delete, hover over the event and click **✕**. It's removed from Google Calendar (and your phone) too; clicked by mistake? Press **Undo** within 6 seconds and it's back as it was.
+
+> Events someone else invited you to can only be changed by their organizer, so they have no ✎. You can still remove them from your calendar with ✕.
 
 > If you signed in before v1.4.0, the Month view shows **"Sign in again (allow adding events)"**. Click it once and allow access.
 
