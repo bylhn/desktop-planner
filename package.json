@@ -10,7 +10,8 @@
     "start": "electron .",
     "icon": "py -I build/make-icon.py",
     "dist": "electron-builder --win nsis",
-    "demo": "node tools/build-demo.js"
+    "demo": "node tools/build-demo.js",
+    "test": "node --test --test-concurrency=1 test/google.test.js test/main-reminders.test.js test/main-updater.test.js test/ui.test.mjs"
   },
   "license": "MIT",
   "dependencies": {

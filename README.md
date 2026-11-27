@@ -1,6 +1,6 @@
 # Desktop Planner
 
-<p align="center"><b>한국어</b> · <a href="README.en.md">English</a></p>
+<p align="center"><b>한국어</b> · <a href="README.en.md">English</a> · <a href="https://github.com/bylhn/desktop-planner/actions/workflows/test.yml"><img src="https://github.com/bylhn/desktop-planner/actions/workflows/test.yml/badge.svg" alt="tests"></a></p>
 
 바탕화면에 붙어 있는 **투명 스터디 플래너 위젯**입니다.
 매일 반복하는 고정 루틴과 그날그날의 할 일을 체크하고, 달성 기록을 그래프로 돌아볼 수 있어요.
@@ -100,6 +100,15 @@ npm run dist
 `dist/` 폴더에 설치 파일이 생겨요. 아이콘을 다시 그리려면 `npm run icon` (Python + Pillow 필요).
 
 Google 로그인을 쓰려면 Google Cloud에서 **데스크톱 앱** 유형의 OAuth 클라이언트를 만들고(Calendar API 사용 설정), 받은 JSON을 `google-client.json`으로 저장하세요. 이 파일은 git에 올라가지 않아요.
+
+### 테스트
+
+```bash
+npm run demo   # index.html을 고쳤다면 체험판부터 다시 만들기
+npm test
+```
+
+Google 연동(가짜 응답), 알림, 자동 업데이트 로직과 실제 앱 화면(체험판을 Chrome으로 직접 눌러 봄)을 확인해요. 설치할 패키지는 없고 Node.js 22 이상과 Chrome만 있으면 돼요(Chrome 위치가 다르면 `CHROME_PATH`). GitHub에 올릴 때마다 자동으로 돌아가요.
 
 ## 라이선스
 

@@ -1,6 +1,6 @@
 # Desktop Planner
 
-<p align="center"><a href="README.md">한국어</a> · <b>English</b></p>
+<p align="center"><a href="README.md">한국어</a> · <b>English</b> · <a href="https://github.com/bylhn/desktop-planner/actions/workflows/test.yml"><img src="https://github.com/bylhn/desktop-planner/actions/workflows/test.yml/badge.svg" alt="tests"></a></p>
 
 A **transparent study-planner widget that lives on your Windows desktop**.
 Check off fixed daily routines and each day's to-dos, and look back on your progress with charts.
@@ -102,6 +102,15 @@ npm run dist
 The installer is written to `dist/`. To redraw the icon, run `npm run icon` (needs Python + Pillow).
 
 For Google sign-in, create a **Desktop app** OAuth client in Google Cloud (with the Calendar API enabled) and save its JSON as `google-client.json`. That file is git-ignored.
+
+### Tests
+
+```bash
+npm run demo   # if you changed index.html, rebuild the demo first
+npm test
+```
+
+Covers the Google calls (faked responses), reminders, auto-update logic and the real app UI (the web demo, clicked through in Chrome). No packages needed, just Node.js 22+ and Chrome (`CHROME_PATH` if it lives elsewhere). Runs automatically on every push to GitHub.
 
 ## License
 
