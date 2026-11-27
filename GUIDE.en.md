@@ -168,6 +168,9 @@ Events you add to Google Calendar on your phone show up in the planner, and even
 
 ## 10. FAQ
 
+**Events I add or edit in the planner show up late on my phone.**
+They're saved to Google Calendar right away (you can check on the Google Calendar website). A phone in **Low Power / battery saver mode** fetches new events late, so turning it off brings them in. Still nothing? On an iPhone, check **Settings → Calendar → Accounts → Fetch New Data** and make sure the Google account updates by **Push** or a short interval.
+
 **I can't see the planner.**
 Click the tray icon, or right-click → "Show planner". If it's off-screen, use "Reset position".
 
