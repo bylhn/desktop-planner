@@ -23,4 +23,5 @@ contextBridge.exposeInMainWorld('planner', {
   googleToggle: (id, on) => ipcRenderer.invoke('google-toggle', id, on),
   googleAddEvent: (calId, ev) => ipcRenderer.invoke('google-add-event', calId, ev),
   googleDeleteEvent: (cal, id) => ipcRenderer.invoke('google-delete-event', cal, id),
+  googleUpdateEvent: (cal, id, ev) => ipcRenderer.invoke('google-update-event', cal, id, ev),
 });

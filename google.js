@@ -184,19 +184,12 @@ const timedEvent = (id, title, s, en) => ({ id, date: dayKey(s), time: hm(s), en
 
 // ev = { date: 'YYYY-MM-DD', endDate?: 'YYYY-MM-DD', time: 'HH:MM' | '', endTime: 'HH:MM' | '', title }
 // No time → all-day event (spanning date..endDate). Time without an end → one hour long.
-// Returns the created event as listEvents-shaped entries (one per day for a multi-day all-day event).
-async function createEvent(account, calId, ev) {
+function eventBody(ev) {
   const body = { summary: ev.title };
   if (!ev.time) {
     const last = parseDate(ev.endDate && ev.endDate > ev.date ? ev.endDate : ev.date);
     body.start = { date: ev.date };
     body.end = { date: dayKey(new Date(last.getFullYear(), last.getMonth(), last.getDate() + 1)) }; // exclusive
-    const r = await api(account, `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events?fields=id`, { method: 'POST', body });
-    const out = [];
-    for (let d = parseDate(ev.date); d <= last; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) {
-      out.push({ id: r.id, date: dayKey(d), time: '', endTime: '', title: ev.title, allDay: true });
-    }
-    return out;
   } else {
     const [y, m, d] = ev.date.split('-').map(Number);
     const at = (t) => { const [h, mi] = t.split(':').map(Number); return new Date(y, m - 1, d, h, mi); };
@@ -207,8 +200,30 @@ async function createEvent(account, calId, ev) {
     body.start = { dateTime: s.toISOString(), timeZone: tz };
     body.end = { dateTime: en.toISOString(), timeZone: tz };
   }
+  return body;
+}
+// The saved event as listEvents-shaped entries (one per day for a multi-day all-day event).
+function entriesFor(id, ev, body) {
+  if (body.start.dateTime) return [timedEvent(id, ev.title, new Date(body.start.dateTime), new Date(body.end.dateTime))];
+  const out = [], last = parseDate(ev.endDate && ev.endDate > ev.date ? ev.endDate : ev.date);
+  for (let d = parseDate(ev.date); d <= last; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) {
+    out.push({ id, date: dayKey(d), time: '', endTime: '', title: ev.title, allDay: true });
+  }
+  return out;
+}
+async function createEvent(account, calId, ev) {
+  const body = eventBody(ev);
   const r = await api(account, `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events?fields=id`, { method: 'POST', body });
-  return [timedEvent(r.id, ev.title, new Date(body.start.dateTime), new Date(body.end.dateTime))];
+  return entriesFor(r.id, ev, body);
+}
+// Changes the title / day / time of an existing event (one occurrence when it's part of a series).
+// PATCH keeps everything else (description, guests, Google's own reminders) as it was.
+async function updateEvent(account, calId, eventId, ev) {
+  const body = eventBody(ev);
+  // switching between all-day and timed: clear the other kind of start/end
+  for (const k of ['start', 'end']) body[k] = body[k].date ? { date: body[k].date, dateTime: null, timeZone: null } : { ...body[k], date: null };
+  const r = await api(account, `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events/${encodeURIComponent(eventId)}?fields=id`, { method: 'PATCH', body });
+  return entriesFor(r.id || eventId, ev, body);
 }
 
 async function deleteEvent(account, calId, eventId) {
@@ -226,4 +241,4 @@ async function revoke(account) {
   try { await postForm('https://oauth2.googleapis.com/revoke', { token: refresh }); } catch { /* already revoked */ }
 }
 
-module.exports = { loadClient, signIn, listCalendars, listEvents, createEvent, deleteEvent, canWrite, revoke, primeAccess, callCount };
+module.exports = { loadClient, signIn, listCalendars, listEvents, createEvent, updateEvent, deleteEvent, canWrite, revoke, primeAccess, callCount };

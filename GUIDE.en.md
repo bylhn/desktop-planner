@@ -114,7 +114,8 @@ Events you add to Google Calendar on your phone show up in the planner, and even
    - `14:00-15:30 Study` → 14:00 to 15:30
    - `Mom's birthday` → all day
 3. It goes straight into Google Calendar, so it shows on your phone too. With several calendars, pick which one next to the box.
-4. To delete, hover over the event and click **✕** and it's deleted right away. It's removed from Google Calendar (and your phone) too.
+4. To edit, **click the event's title** or the **✎** that appears on hover. Change the date and the time / title (like `15:00-16:00 Meeting`) and press **Enter** (Esc cancels). Remove the time to make it all-day. Google Calendar (and your phone) updates right away, and a 🔔 reminder follows the new time.
+5. To delete, hover over the event and click **✕** and it's deleted right away. It's removed from Google Calendar (and your phone) too.
 
 > If you signed in before v1.4.0, the Month view shows **"Sign in again (allow adding events)"**. Click it once and allow access.
 
@@ -181,7 +182,7 @@ Yes. Everything is in `%APPDATA%\desktop-planner\planner-data.json`; closing the
 The planner keeps a dated backup every day in `%APPDATA%\desktop-planner\backups` (last 30 days). If the data file is deleted or damaged, the newest backup is restored automatically the next time it starts. To roll back by hand: tray icon → **More → Open data & backup folder**, end **Desktop Planner** in Task Manager (Ctrl+Shift+Esc), copy the `backups\planner-data-DATE.json` you want over `planner-data.json`, then start the planner again.
 
 **Google says "unverified app". Is it safe?**
-It appears because this personal project hasn't been reviewed by Google yet. The app shows your calendar and only changes events you add or delete in the Month view. Events and tokens stay on your computer. → [Privacy policy](PRIVACY.md)
+It appears because this personal project hasn't been reviewed by Google yet. The app shows your calendar and only changes events you add, edit or delete in the Month view. Events and tokens stay on your computer. → [Privacy policy](PRIVACY.md)
 
 **How do I disconnect Google?**
 ⚙ Settings → Google Calendar → **Disconnect**, or remove Desktop Planner at [Google Account permissions](https://myaccount.google.com/permissions).

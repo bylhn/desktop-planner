@@ -606,6 +606,36 @@ ipcMain.handle('google-delete-event', async (_e, cal, eventId) => {
     return { ok: false, error: googleWriteError(e), payload: calendarPayload() };
   }
 });
+// Edit an event's title / day / time. A multi-day all-day event keeps its length when it moves.
+ipcMain.handle('google-update-event', async (_e, cal, eventId, ev) => {
+  const g = data.google;
+  const title = String((ev && ev.title) || '').trim().slice(0, 200);
+  if (!g || !g.refresh) return { ok: false, error: 'signed-out', payload: calendarPayload() };
+  if (typeof cal !== 'string' || !cal.startsWith('g:') || !eventId || !title || !isDay(ev.date) || !isHM(ev.time) || !isHM(ev.endTime)) return { ok: false, error: 'bad-input', payload: calendarPayload() };
+  if (!google.canWrite(g)) return { ok: false, error: 'scope', payload: calendarPayload() };
+  const entry = data.calCache && data.calCache[cal];
+  const old = entry ? entry.events.filter((x) => x.id === eventId) : [];
+  let endDate = '';
+  if (!ev.time && old.length > 1 && old.every((x) => x.allDay)) {
+    const days = old.map((x) => x.date).sort();
+    const span = Math.round((new Date(days[days.length - 1]) - new Date(days[0])) / 86400000);
+    const [y, m, d] = ev.date.split('-').map(Number);
+    const x = new Date(y, m - 1, d + span);
+    endDate = `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+  }
+  try {
+    const saved = await google.updateEvent(g, cal.slice(2), String(eventId), { date: ev.date, endDate, time: ev.time || '', endTime: ev.endTime || '', title });
+    if (entry) entry.events = entry.events.filter((x) => x.id !== eventId).concat(saved);
+    saveSoon();
+    const payload = calendarPayload();
+    if (win) win.webContents.send('calendar-updated', payload);
+    setTimeout(() => refreshCalendars({ force: true }), 2500); // confirm against Google
+    return { ok: true, payload, updated: saved.map((x) => ({ ...x, cal })) };
+  } catch (e) {
+    logLine(`update-event failed: ${e.message}`);
+    return { ok: false, error: googleWriteError(e), payload: calendarPayload() };
+  }
+});
 
 ipcMain.handle('google-toggle', async (_e, id, on) => {
   const c = data.google && (data.google.calendars || []).find((x) => x.id === id);

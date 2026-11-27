@@ -77,14 +77,14 @@
   var calCbs = [];
   var later = function (v, ms) { return new Promise(function (r) { setTimeout(function () { r(v); }, ms || 250); }); };
 
-  function addEvent(calId, ev) {
-    var out = [], id = uid();
+  function addEvent(calId, ev, keepId) {
+    var out = [], id = keepId || uid();
     var last = ev.endDate && ev.endDate > ev.date ? ev.endDate : ev.date;
     for (var k = ev.date; k <= last; k = dayKey(new Date(parse(k).getTime() + 86400000))) {
       if (ev.time) {
         var end = ev.endTime;
         if (!end) { var h = +ev.time.slice(0, 2) + 1; end = h > 23 ? '' : pad(h) + ev.time.slice(2); }
-        out.push({ id: uid(), date: k, time: ev.time, endTime: end, title: ev.title, allDay: false });
+        out.push({ id: keepId || uid(), date: k, time: ev.time, endTime: end, title: ev.title, allDay: false });
       } else {
         out.push({ id: id, date: k, time: '', endTime: '', title: ev.title, allDay: true });
       }
@@ -129,6 +129,15 @@
     googleLogout: function () { db.connected = false; save(); return later(payload(), 300); },
     googleToggle: function (id, on) { CAL.enabled = !!on; return later(payload()); },
     googleAddEvent: function (calId, ev) { return later(addEvent(calId, ev), 350); },
+    googleUpdateEvent: function (cal, id, ev) {
+      var old = db.events.filter(function (e) { return e.id === id; });
+      if (!old.length) return later({ ok: false, error: 'bad-input', payload: payload() });
+      var span = 0;
+      if (!ev.time && old.length > 1) { var ds = old.map(function (e) { return e.date; }).sort(); span = Math.round((parse(ds[ds.length - 1]) - parse(ds[0])) / 86400000); }
+      db.events = db.events.filter(function (e) { return e.id !== id; });
+      var r = addEvent('demo', { date: ev.date, endDate: span ? dayKey(new Date(parse(ev.date).getTime() + span * 86400000)) : '', time: ev.time, endTime: ev.endTime, title: ev.title }, id);
+            return later({ ok: true, payload: payload(), updated: r.created }, 350);
+    },
     googleDeleteEvent: function (cal, id) { db.events = db.events.filter(function (e) { return e.id !== id; }); save(); return later({ ok: true, payload: payload() }, 250); }
   };
 

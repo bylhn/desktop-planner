@@ -191,6 +191,18 @@
   .mpanel .ev .x { opacity: 0; width: 22px; height: 22px; border-radius: 6px; flex: none; color: var(--ink-soft); }
   .mpanel .ev:hover .x { opacity: 1; }
   .mpanel .ev .x:hover { background: var(--chip); color: var(--sun); }
+  .mpanel .ev .ed { opacity: 0; width: 22px; height: 22px; border-radius: 6px; flex: none; color: var(--ink-soft); font-size: 12px; }
+  .mpanel .ev:hover .ed { opacity: 1; }
+  .mpanel .ev .ed:hover { background: var(--chip); color: var(--accent); }
+  .mpanel .ev .en.can { cursor: text; }
+  .ev-edit { padding: 6px; margin: 2px 0; border-radius: 10px; background: rgba(var(--accent-rgb), 0.08); }
+  .ev-edit .adder { margin-top: 0; }
+  .ev-edit input[type=date] { flex: none; width: 128px; padding: 8px 6px; color: inherit; font: inherit; font-size: 12px; }
+  .ev-edit .eb { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+  .ev-edit .eb .hint { flex: 1; font-size: 11px; color: var(--ink-soft); }
+  .ev-edit .eb button { padding: 4px 10px; border-radius: 8px; font-size: 12px; }
+  .ev-edit .eb .save { background: var(--accent); color: #fff; font-weight: 600; }
+  .ev-edit .eb .cancel { background: var(--chip); color: var(--ink-soft); }
   .mpanel .adder select { border: 0; outline: 0; border-radius: 9px; background: rgba(var(--base), 0.6); color: inherit; padding: 0 6px; max-width: 120px; font: inherit; font-size: 12px; }
   .mpanel .gbtn { margin-top: 6px; }
   .mp-head .txtbtn { padding: 2px 8px; border-radius: 7px; font-size: 11.5px; color: var(--ink-soft); background: var(--chip); }
@@ -494,7 +506,7 @@ const STR = {
     evPh: '일정 추가 (예: 14:00 회의, 14:00-15:30 스터디)', evAdd: '등록', evAdding: '등록 중…', evAdded: (c) => `구글 캘린더(${c})에 등록했어요. 폰에도 곧 떠요.`,
     evNeedLogin: 'Google로 로그인하면 여기서 일정을 등록하고, 폰에서 등록한 일정도 볼 수 있어요.',
     evNeedScope: '일정을 등록하려면 Google 권한을 한 번 더 허용해야 해요.', evRelogin: 'Google 다시 로그인 (일정 등록 허용)',
-    evDelAsk: (n) => `"${n}" 일정을 구글 캘린더에서 삭제할까요? 폰에서도 사라지고 되돌릴 수 없어요.`, evDeleted: '삭제했어요.',
+    evDelAsk: (n) => `"${n}" 일정을 구글 캘린더에서 삭제할까요? 폰에서도 사라지고 되돌릴 수 없어요.`, evDeleted: '삭제했어요.', evEdit: '수정', evSave: '저장', evCancel: '취소', evSaving: '저장 중…', evSaved: '수정했어요. 폰에도 곧 반영돼요.', evEditHint: '시간을 지우면 종일 일정', evEditBad: '날짜와 제목을 확인해 주세요.',
     evFail: (e) => `실패했어요: ${e}`, evNoWritable: '등록할 수 있는 캘린더가 없어요.',
     gWaiting: '브라우저에서 로그인을 마쳐 주세요…', gSync: '동기화', gLogout: '연결 해제', gShowCals: '표시할 캘린더', gSynced: '동기화했어요.',
     gNoClient: '이 버전에는 Google 로그인 설정(google-client.json)이 없어요.', gExpired: '로그인이 만료됐어요. 다시 로그인해 주세요.', gTimeout: '로그인 시간이 지났어요. 다시 시도해 주세요.',
@@ -557,7 +569,7 @@ const STR = {
     evPh: 'Add event (e.g. 14:00 Meeting, 14:00-15:30 Study)', evAdd: 'Add', evAdding: 'Adding…', evAdded: (c) => `Added to Google Calendar (${c}). It'll show on your phone too.`,
     evNeedLogin: 'Sign in with Google to add events here and see events you add on your phone.',
     evNeedScope: 'To add events, allow Google access once more.', evRelogin: 'Sign in again (allow adding events)',
-    evDelAsk: (n) => `Delete "${n}" from Google Calendar? It disappears from your phone too and can't be undone.`, evDeleted: 'Deleted.',
+    evDelAsk: (n) => `Delete "${n}" from Google Calendar? It disappears from your phone too and can't be undone.`, evDeleted: 'Deleted.', evEdit: 'Edit', evSave: 'Save', evCancel: 'Cancel', evSaving: 'Saving…', evSaved: 'Saved. Your phone will update shortly.', evEditHint: 'No time = all-day', evEditBad: 'Check the date and title.',
     evFail: (e) => `Couldn't do that: ${e}`, evNoWritable: 'No calendar you can add events to.',
     gWaiting: 'Finish signing in in your browser…', gSync: 'Sync', gLogout: 'Disconnect', gShowCals: 'Calendars to show', gSynced: 'Synced.',
     gNoClient: 'This build has no Google sign-in setup (google-client.json).', gExpired: 'Your sign-in expired. Please sign in again.', gTimeout: 'Sign-in timed out. Please try again.',
@@ -989,7 +1001,8 @@ function renderMonth() {
 // panel so the whole month is visible again. Dates, the panel itself and controls keep working.
 document.addEventListener('click', (e) => {
   if (view !== 'month' || !mSel || drag) return;
-  if (e.target.closest('.cell, #mPanel, button, input, select, a, .pop, .dash, .modal, label')) return;
+  // !isConnected: the click re-rendered the panel and its target is already gone (e.g. opening an edit)
+  if (!e.target.isConnected || e.target.closest('.cell, #mPanel, button, input, select, a, .pop, .dash, .modal, label')) return;
   mSel = null; mSelEnd = null; $('mpMsg').textContent = '';
   renderMonth();
 });
@@ -1016,6 +1029,7 @@ function openDay(k) { const d = parseKey(k); selected = k; miniMonth = new Date(
 /* Month view panel: the picked date's calendar events + add to Google Calendar. */
 let mpRemind = false, tRemind = false; // bell next to the month-panel / to-do input
 const nowHM = () => { const n = new Date(); return `${pad(n.getHours())}:${pad(n.getMinutes())}`; };
+let mpEdit = null; // { key, cal, id, ev, date, text, busy } while an event in the panel is being edited
 let mSel = null, mSelEnd = null, mpBusy = false, mpCal = '', mpShowTodos = false; // mSel null = panel closed; mSelEnd = last day of a dragged range
 const rangeDays = () => { const out = []; for (let k = mSel; k <= (mSelEnd || mSel); k = addDays(k, 1)) out.push(k); return out; };
 const writableCals = () => (gInfo.calendars || []).filter((c) => c.writable !== false && !/#holiday@/.test(c.id));
@@ -1031,6 +1045,8 @@ function renderMonthPanel() {
   const canDel = gInfo.connected && gInfo.canWrite;
   // a multi-day all-day event appears on each day; list it once
   const seen = new Set();
+  const edFocus = document.activeElement && document.activeElement.closest && document.activeElement.closest('.ev-edit');
+  const edFocusCls = edFocus ? document.activeElement.className : '';
   const evs = days.flatMap((k) => eventsOn(k).map((e) => ({ ...e, day: k }))).filter((e) => {
     const key = e.id ? e.cal + e.id : null;
     if (!key) return true;
@@ -1041,8 +1057,53 @@ function renderMonthPanel() {
     const del = canDel && e.id && String(e.cal).startsWith('g:') && writableCals().some((c) => 'g:' + c.id === e.cal);
     const when = multi ? `${parseKey(e.day).getMonth() + 1}/${parseKey(e.day).getDate()} ${evTime(e)}` : evTime(e);
     const canRing = !e.allDay && (e.day > today || (e.day === today && e.time >= nowHM()));
-    return `<div class="ev"><i class="cb" style="background:${calColor(e.cal)}"></i><span class="et">${when}</span><span class="en">${esc(e.title)}</span>${canRing ? bellBtn(evRemOn(e), `data-ri="${i}"`) : ''}${del ? `<button class="x" data-i="${i}" title="${t('del')}">✕</button>` : ''}</div>`;
+    if (del && mpEdit && mpEdit.key === e.cal + e.id) return `<div class="ev-edit"><div class="adder">
+      <input type="date" class="ed-date" value="${mpEdit.date}"><input class="ed-text" maxlength="200" placeholder="${esc(t('evPh'))}"></div>
+      <div class="eb"><span class="hint">${t('evEditHint')}</span><button class="cancel">${t('evCancel')}</button><button class="save"${mpEdit.busy ? ' disabled' : ''}>${mpEdit.busy ? t('evSaving') : t('evSave')}</button></div></div>`;
+    return `<div class="ev"><i class="cb" style="background:${calColor(e.cal)}"></i><span class="et">${when}</span><span class="en${del ? ' can' : ''}"${del ? ` data-ed="${i}" title="${t('evEdit')}"` : ''}>${esc(e.title)}</span>${canRing ? bellBtn(evRemOn(e), `data-ri="${i}"`) : ''}${del ? `<button class="ed" data-ed="${i}" title="${t('evEdit')}">✎</button><button class="x" data-i="${i}" title="${t('del')}">✕</button>` : ''}</div>`;
   }).join('') : `<div class="empty">${t(multi ? 'mpEmptyRange' : 'mpEmpty')}</div>`;
+  // edit: click the title (or ✎) → that row becomes a small form; Enter saves, Esc cancels
+  $('mpList').querySelectorAll('[data-ed]').forEach((b) => b.onclick = () => {
+    const e = evs[+b.dataset.ed];
+    let start = e.day; // a multi-day all-day event: start from its first day
+    if (e.allDay) for (let n = 0; n < 62 && eventsOn(addDays(start, -1)).some((x) => x.cal === e.cal && x.id === e.id); n++) start = addDays(start, -1);
+    mpEdit = { key: e.cal + e.id, cal: e.cal, id: e.id, ev: e, date: start, text: e.allDay ? e.title : `${e.time}${e.endTime ? '-' + e.endTime : ''} ${e.title}`, busy: false };
+    $('mpMsg').textContent = '';
+    renderMonthPanel();
+    const inp = $('mpList').querySelector('.ed-text');
+    if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+  });
+  const ef = $('mpList').querySelector('.ev-edit');
+  if (ef) {
+    const di = ef.querySelector('.ed-date'), ti = ef.querySelector('.ed-text');
+    ti.value = mpEdit.text;
+    di.oninput = () => { mpEdit.date = di.value; };
+    ti.oninput = () => { mpEdit.text = ti.value; };
+    const cancel = () => { mpEdit = null; renderMonthPanel(); };
+    const save = async () => {
+      if (!mpEdit || mpEdit.busy) return;
+      const ev = splitEvent(mpEdit.text);
+      if (!ev.title || !/^\d{4}-\d{2}-\d{2}$/.test(mpEdit.date)) { $('mpMsg').textContent = t('evEditBad'); return; }
+      const ed = mpEdit, old = ed.ev;
+      ed.busy = true; renderMonthPanel();
+      let r;
+      try { r = await window.planner.googleUpdateEvent(ed.cal, ed.id, { date: ed.date, ...ev }); }
+      catch (err) { r = { ok: false, error: String(err && err.message || err) }; }
+      ed.busy = false;
+      if (r.payload) setCalendar(r.payload);
+      if (r.ok) {
+        // the bell follows the event to its new day / time (timed events only)
+        if (evRemOn(old)) { toggleEvRem(old, false); if (ev.time) (r.updated || []).forEach((x) => toggleEvRem(x, true)); persist(); }
+        mpEdit = null;
+        $('mpMsg').textContent = t('evSaved');
+      } else $('mpMsg').textContent = t('evFail', evErr(r.error));
+      render();
+    };
+    ef.querySelector('.cancel').onclick = cancel;
+    ef.querySelector('.save').onclick = save;
+    if (edFocusCls) { const f = ef.querySelector('.' + edFocusCls.split(' ')[0]); if (f) f.focus(); } // a sync re-rendered the panel mid-edit
+    ef.onkeydown = (e) => { if (e.key === 'Escape') { e.stopPropagation(); cancel(); } else if (e.key === 'Enter' && !e.isComposing) save(); };
+  }
   $('mpList').querySelectorAll('[data-ri]').forEach((b) => b.onclick = () => { toggleEvRem(evs[+b.dataset.ri]); persist(); renderMonthPanel(); });
   $('mpList').querySelectorAll('[data-i]').forEach((b) => b.onclick = async () => {
     const e = evs[+b.dataset.i];
