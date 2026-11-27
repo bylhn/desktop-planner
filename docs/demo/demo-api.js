@@ -52,7 +52,7 @@
     events[3].id = events[4].id = 'trip';
     return {
       todos: todos,
-      settings: { startDate: start, routines: routines, routineDone: routineDone, onboarded: false },
+      settings: { startDate: start, routines: routines, routineDone: routineDone, onboarded: true },
       events: events,
       connected: true
     };

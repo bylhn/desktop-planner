@@ -1,6 +1,6 @@
 # Desktop Planner 개인정보처리방침 / Privacy Policy
 
-최종 수정일 / Last updated: 2026-11-27
+최종 수정일 / Last updated: 2026-11-25
 
 ## 한국어
 
@@ -22,9 +22,6 @@ Desktop Planner(이하 "앱")는 Windows 바탕화면에서 쓰는 개인용 플
 
 **Google API 서비스 사용자 데이터 정책 준수**
 Desktop Planner가 Google API로부터 받은 정보를 사용하고 다른 앱으로 전송하는 방식은 제한적 사용(Limited Use) 요구사항을 포함한 [Google API 서비스 사용자 데이터 정책](https://developers.google.com/terms/api-services-user-data-policy)을 준수합니다.
-
-**홈페이지 방문 수**
-- 안내 홈페이지(앱이 아님)는 방문 횟수를 세기 위해 익명 카운터(abacus.jasoncameron.dev)에 숫자 하나를 올립니다. 쿠키를 쓰지 않고 방문자를 식별하는 정보는 저장하지 않으며, 같은 브라우저는 하루 한 번만 세도록 그 날짜만 브라우저에 기록합니다.
 
 **문의**: [GitHub Issues](https://github.com/bylhn/desktop-planner/issues)
 
@@ -48,8 +45,5 @@ Desktop Planner ("the app") is a personal planner for the Windows desktop. The a
 
 **Google API Services User Data Policy**
 Desktop Planner's use and transfer to any other app of information received from Google APIs will adhere to the [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy), including the Limited Use requirements.
-
-**Website visit count**
-- The information website (not the app) adds one to an anonymous counter at abacus.jasoncameron.dev to count visits. No cookies are used and nothing that identifies a visitor is stored; only today's date is kept in your browser so the same browser is counted at most once a day.
 
 **Contact**: [GitHub Issues](https://github.com/bylhn/desktop-planner/issues)
