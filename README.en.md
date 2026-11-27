@@ -76,6 +76,13 @@ Everything is stored only on your computer, in `%APPDATA%\desktop-planner\planne
 No account is needed and your records are never uploaded. The only network access is downloading events from the calendars you connect (Google, iCal). Google sign-in tokens stay on your computer, encrypted with Windows DPAPI. → [Privacy policy](PRIVACY.md)
 To back up, just copy that file.
 
+## Good to know
+
+- **Free and open source (MIT)** — add features yourself, or suggest them in [issues](https://github.com/bylhn/desktop-planner/issues) or a PR.
+- **Your own changes vs. updates** — edits made directly to the installed app's files are replaced by updates. To keep your own changes, fork the repository, build it yourself, and merge new versions in. Updates may change the app's structure, so features you added yourself aren't guaranteed to keep working.
+- **Your records are safe** — your data and backups live separately in `%APPDATA%\desktop-planner` and are never touched by updates.
+- **Your choice on updates** — in ⚙ Settings → **Automatic updates → Off (notify only)** the app only tells you about new versions; nothing downloads or installs unless you click.
+
 ## Run from source (developers)
 
 Requires [Node.js](https://nodejs.org/) 18 or later.

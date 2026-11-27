@@ -301,6 +301,7 @@
       <div class="card tilt stat"><b id="stAge">–</b><span>공개 후 지난 시간</span></div>
       <div class="card tilt stat"><b id="stDl" data-n="">–</b><span>설치 파일 다운로드</span><small>자동 업데이트 포함</small></div>
       <div class="card tilt stat"><b id="stRel">–</b><span>지금까지 낸 버전</span><small id="stLatest">&nbsp;</small></div>
+      <div class="card tilt stat"><b id="stVisit">–</b><span>사이트 방문</span><small>11.27부터 · 하루 한 번씩 셈</small></div>
     </div>
   </section>
 
@@ -337,10 +338,22 @@
     </a>
   </section>
 
+  <section class="reveal" id="notice">
+    <div class="kicker">Good to know</div>
+    <h2>알아 두세요</h2>
+    <ol class="steps">
+      <li><b>무료 · 오픈소스</b> — Desktop Planner는 무료로 배포되고 코드가 모두 공개돼 있어요(<a href="https://github.com/bylhn/desktop-planner/blob/main/LICENSE">MIT 라이선스</a>). 필요한 기능은 직접 추가해서 쓰셔도 되고, <a href="https://github.com/bylhn/desktop-planner/issues">GitHub</a>에 제안해 주시면 다음 버전에 반영할 수 있어요.</li>
+      <li><b>직접 고친 기능과 업데이트</b> — 설치된 앱 파일을 직접 고치면 업데이트 때 새 파일로 덮어써져 사라져요. 고쳐 쓰고 싶다면 저장소를 포크해서 직접 빌드하고, 새 버전은 GitHub에서 가져와(merge) 합치세요. 업데이트로 화면이나 코드 구조가 바뀌면 직접 추가한 기능이 맞지 않을 수 있고, 이 부분은 보장해 드리기 어려워요.</li>
+      <li><b>내 기록은 안전해요</b> — 할 일·루틴 기록과 백업은 앱과 따로 저장돼서, 업데이트해도 지워지지 않아요.</li>
+      <li><b>업데이트 안 할 권리</b> — 새 버전은 기본적으로 알아서 받아지지만, ⚙ 설정 → <b>자동 업데이트 → 끄기 (알림만)</b>을 고르면 알려만 주고, 받기·설치는 직접 눌렀을 때만 해요.</li>
+      <li><b>코드 서명 없음</b> — 개인 프로젝트라 설치할 때 Windows가 "PC 보호" 경고를 띄울 수 있어요. <b>추가 정보 → 실행</b>을 누르면 돼요.</li>
+    </ol>
+  </section>
+
   <section class="reveal">
     <div class="kicker">In English</div>
     <h2>Desktop Planner, in short</h2>
-    <p class="en"><b>Desktop Planner</b> is a free, open-source study planner that lives on your Windows desktop: fixed daily routines, per-day to-dos, a progress dashboard, and optional Google Calendar / iCal events — add events (even across several dragged days) from the Month view and they show up on your phone. Ring the 🔔 on any timed event or to-do for a silent Windows reminder a few minutes before it starts. Daily automatic backups and auto-updates included.
+    <p class="en"><b>Desktop Planner</b> is a free, open-source study planner that lives on your Windows desktop: fixed daily routines, per-day to-dos, a progress dashboard, and optional Google Calendar / iCal events — add events (even across several dragged days) from the Month view and they show up on your phone. Ring the 🔔 on any timed event or to-do for a silent Windows reminder a few minutes before it starts. Daily automatic backups and auto-updates included (you can turn automatic updates off in Settings and only be notified). It's free and open source (MIT): add features yourself or suggest them on GitHub — note that edits made directly to the installed app are replaced by updates, so fork the repository if you want to keep your own changes.
     When you choose <b>Sign in with Google</b>, the app requests <span class="scope">calendar.readonly</span> to display your events, <span class="scope">calendar.events</span> to add the events you type in the Month view (and delete the ones you choose), and <span class="scope">email</span> to show which account is connected. Events and tokens stay on your computer; nothing is sent to the developer or third parties, and no other events are ever changed.
     Use of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements.
     See the <a href="privacy.html#en">privacy policy</a> and the <a href="https://github.com/bylhn/desktop-planner/blob/main/GUIDE.en.md">user guide</a>.</p>
@@ -433,6 +446,22 @@
       else new IntersectionObserver(function (es, o) { if (es[0].isIntersecting) { go(); o.disconnect(); } }, { threshold: .3 }).observe(box);
     })
     .catch(function () { /* keep the dashes */ });
+
+  // Visit counter: an anonymous number at abacus.jasoncameron.dev (no cookies, nothing about the visitor
+  // is stored). The same browser is counted at most once a day; reloads only read the number.
+  (function () {
+    var n = new Date(), KEY = 'dp-visit-day', today = n.getFullYear() + '-' + (n.getMonth() + 1) + '-' + n.getDate(), seen = null; // local day
+    try { seen = localStorage.getItem(KEY); } catch (e) { /* private mode: count, don't remember */ }
+    var url = 'https://abacus.jasoncameron.dev/' + (seen === today ? 'get' : 'hit') + '/bylhn-desktop-planner/visits';
+    fetch(url).then(function (r) { if (!r.ok) throw r.status; return r.json(); }).then(function (j) {
+      if (typeof j.value !== 'number' || j.value < 0) return;
+      try { localStorage.setItem(KEY, today); } catch (e) {}
+      var el = document.getElementById('stVisit'), box = document.getElementById('stats'), done = false;
+      function go() { if (!done) { done = true; countUp(el, j.value, '회'); } }
+      if (box.classList.contains('in')) go();
+      else new IntersectionObserver(function (es, o) { if (es[0].isIntersecting) { go(); o.disconnect(); } }, { threshold: .3 }).observe(box);
+    }).catch(function () { /* counter down: keep the dash */ });
+  })();
 })();
 </script>
 </body>

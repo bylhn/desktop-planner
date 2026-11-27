@@ -121,6 +121,7 @@
     updateGet: function () { return Promise.resolve({ status: 'idle', current: 'demo', packaged: false }); },
     updateCheck: function () {},
     updateInstall: function () {},
+    updateDownload: function () {},
     onUpdate: function () {},
     onGotoDay: function () {}, // reminders are shown by the desktop app only
     openLink: function (key) { if (LINKS[key]) window.open(LINKS[key], '_blank', 'noopener'); },

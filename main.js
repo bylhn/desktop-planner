@@ -289,7 +289,7 @@ const TR = {
     updInstall: (v) => `🎉 업데이트 설치하고 다시 시작 (v${v})`, updCheck: '업데이트 확인', updDownloading: (v, p) => `업데이트 받는 중… v${v} (${p}%)`,
     errUrl: 'http(s)로 시작하는 주소가 아니에요', errHttp: (s) => `서버 응답 오류 (${s})`, errBig: '파일이 너무 커요',
     errFormat: 'iCal 형식이 아니에요. "iCal/ICS 주소"를 넣어 주세요', errTimeout: '응답이 없어요 (시간 초과)',
-    remIn: (m) => `${m}분 후 시작`, remNow: '지금 시작',
+    remIn: (m) => `${m}분 후 시작`, remNow: '지금 시작', updGet: (v) => `⬇ 새 버전 받기 (v${v})`,
     gPageOk: '✅ Google 캘린더가 연결됐어요', gPageFail: '연결하지 못했어요', gPageClose: '이 창을 닫고 플래너로 돌아가세요.',
   },
   en: {
@@ -299,7 +299,7 @@ const TR = {
     updInstall: (v) => `🎉 Install update and restart (v${v})`, updCheck: 'Check for updates', updDownloading: (v, p) => `Downloading update… v${v} (${p}%)`,
     errUrl: 'The link must start with http(s)', errHttp: (s) => `Server error (${s})`, errBig: 'The file is too large',
     errFormat: 'Not an iCal feed. Paste the calendar\'s iCal/ICS link', errTimeout: 'No response (timed out)',
-    remIn: (m) => `Starts in ${m} min`, remNow: 'Starting now',
+    remIn: (m) => `Starts in ${m} min`, remNow: 'Starting now', updGet: (v) => `⬇ Get new version (v${v})`,
     gPageOk: '✅ Google Calendar is connected', gPageFail: 'Could not connect', gPageClose: 'You can close this tab and go back to the planner.',
   },
 };
@@ -318,7 +318,9 @@ function buildTrayMenu() {
     ? [{ label: tr('updInstall', upd.version), click: () => installUpdate() }, { type: 'separator' }]
     : upd.status === 'downloading'
       ? [{ label: tr('updDownloading', upd.version, upd.progress || 0), enabled: false }, { type: 'separator' }]
-      : [];
+      : upd.status === 'available'
+        ? [{ label: tr('updGet', upd.version), click: () => downloadUpdate() }, { type: 'separator' }]
+        : [];
   tray.setContextMenu(trayMenu = Menu.buildFromTemplate([
     ...updItems,
     { label: win.isVisible() ? tr('hide') : tr('show'), click: () => { win.isVisible() ? win.hide() : bringToFront(); buildTrayMenu(); } },
@@ -673,7 +675,7 @@ function sendUpdate(patch) {
   if (tray && win) buildTrayMenu();
 }
 function checkForUpdates() {
-  if (!autoUpdater || updateState.status === 'downloading' || updateState.status === 'ready') return;
+  if (!autoUpdater || updateState.status === 'downloading' || updateState.status === 'ready' || updateState.status === 'available') return;
   autoUpdater.checkForUpdates().catch((e) => sendUpdate({ status: 'error', error: e.message }));
 }
 function initUpdater() {
@@ -681,10 +683,10 @@ function initUpdater() {
   if ((!app.isPackaged && !testFeed) || TEST_BUILD) return;
   try { ({ autoUpdater } = require('electron-updater')); } catch (e) { console.error('updater unavailable', e); return; }
   if (testFeed) { autoUpdater.forceDevUpdateConfig = !app.isPackaged; autoUpdater.setFeedURL({ provider: 'generic', url: testFeed }); }
-  autoUpdater.autoDownload = true;
-  autoUpdater.autoInstallOnAppQuit = true;
+  applyUpdatePolicy();
   autoUpdater.on('checking-for-update', () => sendUpdate({ status: 'checking', error: null }));
-  autoUpdater.on('update-available', (i) => sendUpdate({ status: 'downloading', version: i.version, progress: 0 }));
+  // auto mode: download right away; manual mode: just tell the user a new version exists
+  autoUpdater.on('update-available', (i) => sendUpdate(autoUpdater.autoDownload ? { status: 'downloading', version: i.version, progress: 0 } : { status: 'available', version: i.version }));
   autoUpdater.on('update-not-available', () => sendUpdate({ status: 'latest' }));
   let lastPct = -10;
   autoUpdater.on('download-progress', (p) => { if (p.percent - lastPct >= 5) { lastPct = p.percent; sendUpdate({ progress: Math.round(p.percent) }); } });
@@ -692,6 +694,21 @@ function initUpdater() {
   autoUpdater.on('error', (e) => sendUpdate({ status: 'error', error: (e && e.message || String(e)).split('\n')[0] }));
   setTimeout(checkForUpdates, testFeed ? 3000 : 20000);
   setInterval(checkForUpdates, 6 * 60 * 60 * 1000);
+}
+// Users may opt out of automatic updates (Settings → Auto-update: Off). Then the app still checks and
+// shows "a new version is available", but downloads only when asked and installs only on "Restart now"
+// (never silently when the app quits).
+const autoUpdateOn = () => data.settings.autoUpdate !== false;
+function applyUpdatePolicy() {
+  if (!autoUpdater) return;
+  autoUpdater.autoDownload = autoUpdateOn();
+  autoUpdater.autoInstallOnAppQuit = autoUpdateOn();
+  if (autoUpdateOn() && updateState.status === 'available') downloadUpdate(); // switched back on
+}
+function downloadUpdate() {
+  if (!autoUpdater || updateState.status !== 'available') return;
+  sendUpdate({ status: 'downloading', progress: 0 });
+  autoUpdater.downloadUpdate().catch((e) => sendUpdate({ status: 'error', error: e.message }));
 }
 function installUpdate() {
   if (!autoUpdater || updateState.status !== 'ready') return;
@@ -704,6 +721,7 @@ ipcMain.handle('update-get', () => ({ ...updateState, current: app.getVersion(),
 if (process.env.PLANNER_UPDATE_AUTOINSTALL) setInterval(() => { if (updateState.status === 'ready') installUpdate(); }, 2000);
 ipcMain.on('update-check', () => checkForUpdates());
 ipcMain.on('update-install', () => installUpdate());
+ipcMain.on('update-download', () => downloadUpdate());
 
 ipcMain.handle('load', () => data);
 ipcMain.handle('app-info', () => ({ version: app.getVersion() }));
@@ -721,7 +739,9 @@ ipcMain.on('save-settings', (_e, s) => {
   delete s.bounds; // the main process owns window bounds
   const lockChanged = s.locked !== data.settings.locked || s.lang !== data.settings.lang;
   const blurChanged = s.blur !== undefined && s.blur !== data.settings.blur;
+  const updChanged = s.autoUpdate !== undefined && s.autoUpdate !== data.settings.autoUpdate;
   data.settings = Object.assign(data.settings, s);
+  if (updChanged) { applyUpdatePolicy(); buildTrayMenu(); }
   if (lockChanged) { applyLock(); buildTrayMenu(); }
   if (blurChanged) applyBlur();
   saveSoon();

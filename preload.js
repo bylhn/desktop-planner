@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('planner', {
   updateGet: () => ipcRenderer.invoke('update-get'),
   updateCheck: () => ipcRenderer.send('update-check'),
   updateInstall: () => ipcRenderer.send('update-install'),
+  updateDownload: () => ipcRenderer.send('update-download'),
   onUpdate: (cb) => ipcRenderer.on('update-state', (_e, s) => cb(s)),
   openLink: (key) => ipcRenderer.send('open-link', key),
   onGotoDay: (cb) => ipcRenderer.on('goto-day', (_e, k) => cb(k)),

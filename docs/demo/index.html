@@ -334,6 +334,9 @@
   <label data-i18n="remTitle"></label>
   <div class="row" id="remLead"><button data-m="5"></button><button data-m="10"></button><button data-m="30"></button><button data-m="-1" data-i18n="off"></button></div>
   <div class="hint" data-i18n="remHint"></div>
+  <label data-i18n="autoUpd"></label>
+  <div class="row"><button id="autoUpdOn" data-i18n="on"></button><button id="autoUpdOff" data-i18n="autoUpdManual"></button></div>
+  <div class="hint" id="autoUpdHint"></div>
   <label data-i18n="pastTodos"></label>
   <button class="wide" id="rollover" data-i18n="rollover"></button>
   <label data-i18n="gTitle"></label>
@@ -470,6 +473,8 @@ const STR = {
     rolled: (n) => `${n}개를 오늘로 옮겼어요`, nothingToRoll: '옮길 할 일이 없어요',
     updChecking: '업데이트 확인 중…', updLatest: '최신 버전이에요', updDownloading: (v, p) => `새 버전 v${v} 받는 중… ${p}%`, updReady: (v) => `새 버전 v${v} 준비 완료`, updError: '업데이트를 확인하지 못했어요', updCheckBtn: '업데이트 확인', updInstallBtn: '지금 다시 시작',
     toastTitle: (v) => `새 버전 v${v}가 준비됐어요`, toastSub: '다시 시작하면 바로 적용돼요. 나중에 꺼도 자동으로 적용돼요.', toastNow: '지금 다시 시작', toastLater: '나중에',
+    toastSubManual: '"지금 다시 시작"을 누를 때만 적용돼요.', updAvailable: (v) => `새 버전 v${v}이 있어요`, updGetBtn: '받기',
+    autoUpd: '자동 업데이트', autoUpdManual: '끄기 (알림만)', autoUpdHintOn: '새 버전을 알아서 받아 두고, 플래너를 끌 때 적용해요.', autoUpdHintOff: '새 버전이 나오면 알려만 줘요. 받기·설치는 직접 눌렀을 때만 해요.',
     howTo: '📖 사용법 보기', guide: '설명서', privacy: '개인정보처리방침', feedback: '의견 보내기',
     helpTitle: 'Desktop Planner 사용법', helpSub: '바탕화면에 붙어 있는 나만의 스터디 플래너예요. 이것만 알면 바로 쓸 수 있어요.',
     guideFull: '자세한 설명서 보기 →', start: '시작하기',
@@ -531,6 +536,8 @@ const STR = {
     rolled: (n) => `Moved ${n} to today`, nothingToRoll: 'Nothing to move',
     updChecking: 'Checking for updates…', updLatest: "You're up to date", updDownloading: (v, p) => `Downloading v${v}… ${p}%`, updReady: (v) => `v${v} is ready`, updError: "Couldn't check for updates", updCheckBtn: 'Check for updates', updInstallBtn: 'Restart now',
     toastTitle: (v) => `Version ${v} is ready`, toastSub: "Restart to apply it now — or it'll be applied next time the planner closes.", toastNow: 'Restart now', toastLater: 'Later',
+    toastSubManual: 'It is only applied when you click "Restart now".', updAvailable: (v) => `Version ${v} is available`, updGetBtn: 'Download',
+    autoUpd: 'Automatic updates', autoUpdManual: 'Off (notify only)', autoUpdHintOn: 'New versions download in the background and apply when the planner closes.', autoUpdHintOff: "You'll only be told about new versions. Nothing downloads or installs unless you click.",
     howTo: '📖 How to use', guide: 'Guide', privacy: 'Privacy', feedback: 'Feedback',
     helpTitle: 'Getting started', helpSub: 'Your study planner, pinned to the desktop. Here is all you need to know.',
     guideFull: 'Read the full guide →', start: 'Get started',
@@ -604,15 +611,20 @@ let upd = { status: 'idle' }, toastDismissedFor = null;
 function renderUpdate() {
   const s = upd.status;
   $('updTxt').textContent = s === 'checking' ? t('updChecking') : s === 'latest' ? t('updLatest') : s === 'downloading' ? t('updDownloading', upd.version, upd.progress || 0)
-    : s === 'ready' ? t('updReady', upd.version) : s === 'error' ? t('updError') : '';
-  $('updBtn').textContent = s === 'ready' ? t('updInstallBtn') : (s === 'idle' || s === 'latest' || s === 'error') && upd.packaged !== false ? t('updCheckBtn') : '';
+    : s === 'available' ? t('updAvailable', upd.version) : s === 'ready' ? t('updReady', upd.version) : s === 'error' ? t('updError') : '';
+  $('updBtn').textContent = s === 'ready' ? t('updInstallBtn') : s === 'available' ? t('updGetBtn') : (s === 'idle' || s === 'latest' || s === 'error') && upd.packaged !== false ? t('updCheckBtn') : '';
   $('updBtn').title = s === 'error' ? (upd.error || '') : '';
   const showToast = s === 'ready' && toastDismissedFor !== upd.version;
   $('updToast').hidden = !showToast;
-  if (showToast) { $('toastTitle').textContent = t('toastTitle', upd.version); $('toastSub').textContent = t('toastSub'); $('toastNow').textContent = t('toastNow'); $('toastLater').textContent = t('toastLater'); }
+  if (showToast) { $('toastTitle').textContent = t('toastTitle', upd.version); $('toastSub').textContent = t(settings.autoUpdate === false ? 'toastSubManual' : 'toastSub'); $('toastNow').textContent = t('toastNow'); $('toastLater').textContent = t('toastLater'); }
 }
 function initUpdateUI() { // called once the page's helpers ($ etc.) exist
-  $('updBtn').onclick = (e) => { e.preventDefault(); e.stopPropagation(); if (upd.status === 'ready') window.planner.updateInstall(); else window.planner.updateCheck(); };
+  $('updBtn').onclick = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    if (upd.status === 'ready') window.planner.updateInstall();
+    else if (upd.status === 'available') window.planner.updateDownload();
+    else window.planner.updateCheck();
+  };
   $('toastNow').onclick = () => window.planner.updateInstall();
   $('toastLater').onclick = () => { toastDismissedFor = upd.version; renderUpdate(); };
   window.planner.onUpdate((s) => { upd = { ...upd, ...s }; renderUpdate(); });
@@ -1354,13 +1366,18 @@ function applySettings() {
   $('darkInk').classList.toggle('on', !!settings.dark);
   $('blurOn').classList.toggle('on', settings.blur !== false);
   $('blurOff').classList.toggle('on', settings.blur === false);
+  $('autoUpdOn').classList.toggle('on', settings.autoUpdate !== false);
+  $('autoUpdOff').classList.toggle('on', settings.autoUpdate === false);
+  $('autoUpdHint').textContent = t(settings.autoUpdate === false ? 'autoUpdHintOff' : 'autoUpdHintOn');
   $('remLead').querySelectorAll('button').forEach((b) => {
     const m = +b.dataset.m;
     if (m > 0) b.textContent = t('remMin', m);
     b.classList.toggle('on', m === remLead());
   });
 }
-$('remLead').querySelectorAll('button').forEach((b) => b.onclick = () => { settings.remindLead = +b.dataset.m; persist(); render(); });
+$('autoUpdOn').onclick = () => { settings.autoUpdate = true; persist(); applySettings(); renderUpdate(); };
+$('autoUpdOff').onclick = () => { settings.autoUpdate = false; persist(); applySettings(); renderUpdate(); };
+$('remLead').querySelectorAll('button').forEach((b) => b.onclick =() => { settings.remindLead = +b.dataset.m; persist(); render(); });
 window.planner.onGotoDay && window.planner.onGotoDay((k) => { // clicked a reminder notification
   if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) return;
   selected = k; miniMonth = parseKey(k); $('pop').classList.remove('open');

@@ -31,6 +31,10 @@ The quick-start card you see on first launch is always available from ⚙ Settin
 
 **Updates are automatic (from v1.3.4).** When a new version is out, the planner downloads it in the background and shows "Version x is ready" at the bottom. Click **Restart now**, or leave it — it's applied the next time the planner closes or the PC restarts. You can also use **Check for updates** at the bottom of Settings or in the tray menu. Your data is kept.
 
+**Prefer to update yourself? (from v1.5.0)** ⚙ Settings → **Automatic updates → Off (notify only)**. When a new version is out you'll only see "Version x is available" at the bottom of Settings; it downloads and installs only when you click **Download** and then **Restart now** — never silently when the planner closes.
+
+> Edits made directly to the installed app's files are replaced by updates. Your records and backups are stored separately and stay safe.
+
 ## 2. A quick tour
 
 ![Day view](docs/guide/en-day.png)
