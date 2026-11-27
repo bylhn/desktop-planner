@@ -1,7 +1,7 @@
 /* Desktop Planner web demo: stands in for the Electron preload bridge (window.planner).
    Everything lives in this browser's localStorage; nothing is sent anywhere. */
 (function () {
-  var KEY = 'dp-demo-v1';
+  var KEY = 'dp-demo-v2'; // bump when the sample data changes
   var pad = function (n) { return String(n).padStart(2, '0'); };
   var dayKey = function (d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
   var shift = function (n) { var d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + n); return dayKey(d); };
@@ -47,12 +47,16 @@
       ev(4, '', '', L('학회 출장', 'Conference trip')),
       ev(6, '19:00', '21:00', L('스터디 모임', 'Study group')),
       ev(-3, '09:00', '10:30', L('자료구조 수업', 'Data structures class')),
-      ev(9, '', '', L('엄마 생일', "Mom's birthday"))
+      ev(9, '', '', L('엄마 생일', "Mom's birthday")),
+      ev(1, '10:00', '11:00', L('교수님 면담 (초대받음)', 'Advisor meeting (invited)')),
+      ev(1, '23:00', '', L('야간 서버 점검', 'Night server check'))
     ];
     events[3].id = events[4].id = 'trip';
+    events[8].ro = true; // invited: only the organizer could change it
+    events[9].dur = 150; // 23:00 → 01:30 the next day
     return {
       todos: todos,
-      settings: { startDate: start, routines: routines, routineDone: routineDone, onboarded: true },
+      settings: { startDate: start, routines: routines, routineDone: routineDone, onboarded: true, evReminders: ['g:demo|' + events[2].id + '|' + events[2].date] },
       events: events,
       connected: true
     };
@@ -82,9 +86,11 @@
     var last = ev.endDate && ev.endDate > ev.date ? ev.endDate : ev.date;
     for (var k = ev.date; k <= last; k = dayKey(new Date(parse(k).getTime() + 86400000))) {
       if (ev.time) {
-        var end = ev.endTime;
-        if (!end) { var h = +ev.time.slice(0, 2) + 1; end = h > 23 ? '' : pad(h) + ev.time.slice(2); }
-        out.push({ id: keepId || uid(), date: k, time: ev.time, endTime: end, title: ev.title, allDay: false });
+        var mins = function (t) { return +t.slice(0, 2) * 60 + +t.slice(3, 5); };
+        var dur = ev.endTime ? (mins(ev.endTime) - mins(ev.time) + 1440) % 1440 || 60 : (+ev.dur > 0 ? +ev.dur : 60);
+        var endM = mins(ev.time) + dur, row = { id: keepId || uid(), date: k, time: ev.time, endTime: '', title: ev.title, allDay: false };
+        if (endM < 1440) row.endTime = pad(Math.floor(endM / 60)) + ':' + pad(endM % 60); else row.dur = dur;
+        out.push(row);
       } else {
         out.push({ id: id, date: k, time: '', endTime: '', title: ev.title, allDay: true });
       }
@@ -135,11 +141,32 @@
       var span = 0;
       if (!ev.time && old.length > 1) { var ds = old.map(function (e) { return e.date; }).sort(); span = Math.round((parse(ds[ds.length - 1]) - parse(ds[0])) / 86400000); }
       db.events = db.events.filter(function (e) { return e.id !== id; });
-      var r = addEvent('demo', { date: ev.date, endDate: span ? dayKey(new Date(parse(ev.date).getTime() + span * 86400000)) : '', time: ev.time, endTime: ev.endTime, title: ev.title }, id);
+      var r = addEvent('demo', { date: ev.date, endDate: span ? dayKey(new Date(parse(ev.date).getTime() + span * 86400000)) : '', time: ev.time, endTime: ev.endTime, dur: ev.dur, title: ev.title }, id);
             return later({ ok: true, payload: payload(), updated: r.created }, 350);
     },
     googleDeleteEvent: function (cal, id) { db.events = db.events.filter(function (e) { return e.id !== id; }); save(); return later({ ok: true, payload: payload() }, 250); }
   };
+
+  // The demo can't pop real Windows notifications, so turning a bell on shows a look-alike for a few seconds.
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.bell');
+    if (!b || b.id) return; // the adders' bells only arm the next entry
+    var row = b.closest('.ev, .item'), name = row && (row.querySelector('.en, .txt') || {}).textContent;
+    if (!name || b.classList.contains('on')) return; // it was on: this click turns it off
+    setTimeout(function () {
+      var box = document.getElementById('demoToast');
+      if (!box) {
+        box = document.createElement('div'); box.id = 'demoToast';
+        box.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:99;width:300px;padding:12px 14px;border-radius:10px;background:rgba(32,32,40,.96);color:#fff;font-size:12.5px;line-height:1.5;box-shadow:0 10px 30px rgba(0,0,0,.35);transition:opacity .3s';
+        document.body.appendChild(box);
+      }
+      var lead = (db.settings.remindLead === undefined ? 5 : db.settings.remindLead);
+      box.innerHTML = '<div style="opacity:.7;font-size:11px">Desktop Planner · ' + L('미리보기', 'preview') + '</div><b style="display:block;margin:2px 0">🔔 ' + name.replace(/[<&>]/g, '') + '</b>' +
+        L('실제 앱에서는 시작 ' + lead + '분 전에 이렇게 소리 없이 알려 줘요.', 'The real app shows this silently ' + lead + ' minutes before it starts.');
+      box.style.opacity = '1';
+      clearTimeout(box._t); box._t = setTimeout(function () { box.style.opacity = '0'; }, 4000);
+    }, 0);
+  }, true);
 
   // lets the homepage reset the demo
   addEventListener('message', function (e) {
